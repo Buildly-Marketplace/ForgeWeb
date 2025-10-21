@@ -1,0 +1,81 @@
+# Python Virtual Environment
+venv/
+env/
+.venv/
+.env/
+
+# Environment Variables
+.env
+.env.local
+.env.production
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+
+# User uploads
+uploads/
+user_assets/
+
+# Generated site files (in root)
+index.html
+about.html
+contact.html
+blog.html
+portfolio.html
+services.html
+sitemap.xml
+robots.txt
+404.html
+
+# But keep the admin directory
+!admin/
+
+# Keep essential directories
+!assets/
+!templates/
+
+# Node modules (if using npm for development)
+node_modules/
+
+# GitHub token files
+.github_token
