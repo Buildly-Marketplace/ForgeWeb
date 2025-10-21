@@ -32,8 +32,6 @@ class SiteGenerator {
 
         // Load templates
         await this.loadTemplates();
-        
-        console.log('Site generator initialized with config:', this.siteConfig);
     }
 
     /**

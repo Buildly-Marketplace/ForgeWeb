@@ -73,7 +73,10 @@ jobs:
       - name: Test admin server startup
         run: |
           cd admin
-          timeout 10s python file-api.py --test || true
+          timeout 10s python file-api.py --port 8080 > /dev/null 2>&1 &
+          sleep 2
+          curl -f http://localhost:8080/admin/ || exit 1
+          pkill -f "python file-api.py" || true
           echo "✅ Server startup test completed"
 
       - name: Validate HTML templates

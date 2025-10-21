@@ -962,12 +962,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ForgeWeb Local Server')
     parser.add_argument('--port', type=int, default=8000, help='Port number (default: 8000)')
     parser.add_argument('--host', default='localhost', help='Host address (default: localhost)')
-    parser.add_argument('--test', action='store_true', help='Test mode - exit after startup')
     
     args = parser.parse_args()
-    
-    if args.test:
-        print("✓ ForgeWeb server test mode - startup successful")
-        sys.exit(0)
-    
     start_forgeweb_server(args.port, args.host)

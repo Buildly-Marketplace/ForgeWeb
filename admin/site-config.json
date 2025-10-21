@@ -1,8 +1,8 @@
 {
   "site": {
-    "name": "Alternate API Test",
+    "name": "My ForgeWeb Site",
     "url": "https://username.github.io/repository",
-    "description": "Testing alternate endpoint",
+    "description": "A modern website built with ForgeWeb AI-powered site generator",
     "author": "Website Owner",
     "generator": "ForgeWeb v1.0.0",
     "support_url": "https://docs.buildly.io/forgeweb"
