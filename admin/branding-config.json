@@ -1,0 +1,10 @@
+{
+  "colors": {
+    "primary": "#1b5fa3",
+    "secondary": "#f9943b"
+  },
+  "typography": {
+    "headingFont": "Inter",
+    "bodyFont": "Inter"
+  }
+}

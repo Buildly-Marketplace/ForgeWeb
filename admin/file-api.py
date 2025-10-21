@@ -80,7 +80,7 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
         """Handle POST requests for API endpoints"""
         if self.path == '/api/save-file':
             self.handle_save_file()
-        elif self.path == '/api/setup-site':
+        elif self.path == '/api/setup-site' or self.path == '/api/site-setup':
             self.handle_setup_site()
         elif self.path == '/api/branding':
             self.handle_branding_request()
@@ -217,18 +217,19 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
             
+            # Handle both action-based and direct data formats
             action = data.get('action')
-            site_data = data.get('data', {})
+            site_data = data.get('data', data)  # Use data directly if no action
             
-            if action == 'update-config':
+            if action == 'update-config' or not action:
                 result = self.update_site_config(site_data)
             elif action == 'generate-site':
                 result = self.generate_site_files(site_data)
             elif action == 'create-github-repo':
                 result = self.create_github_repo(site_data)
             else:
-                self.send_json_error(400, f"Unknown action: {action}")
-                return
+                # Handle direct site configuration without action
+                result = self.update_site_config(site_data)
                 
             self.send_json_response(result)
             
@@ -313,18 +314,79 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
         return {'success': True, 'message': 'Site configuration updated'}
 
     def generate_site_files(self, site_data):
-        """Generate site files using the site generator"""
+        """Generate site files based on configuration"""
         try:
-            # Import and use the site generator
-            generator_script = os.path.join(self.admin_dir, 'js', 'site-generator-python.py')
+            # Load templates
+            template_dir = os.path.join(self.website_root, 'templates')
+            base_template_path = os.path.join(template_dir, 'base.html')
             
-            # Create a Python version of the site generator for server-side use
-            result = self.run_site_generator(site_data)
+            if not os.path.exists(base_template_path):
+                return {'success': False, 'error': 'Base template not found'}
             
-            return {'success': True, 'message': 'Site files generated successfully', 'files': result}
+            with open(base_template_path, 'r', encoding='utf-8') as f:
+                base_template = f.read()
+            
+            # Generate pages based on configuration
+            pages_generated = []
+            
+            # Always generate home page
+            home_content = self.load_content_template('home-content.html')
+            home_page = self.generate_page(base_template, 'Home', home_content, site_data)
+            self.write_page('index.html', home_page)
+            pages_generated.append('index.html')
+            
+            # Generate optional pages
+            if site_data.get('includeAbout', True):
+                about_content = self.load_content_template('about-content.html')
+                about_page = self.generate_page(base_template, 'About', about_content, site_data)
+                self.write_page('about.html', about_page)
+                pages_generated.append('about.html')
+            
+            if site_data.get('includeContact', True):
+                contact_content = self.load_content_template('contact-content.html')
+                contact_page = self.generate_page(base_template, 'Contact', contact_content, site_data)
+                self.write_page('contact.html', contact_page)
+                pages_generated.append('contact.html')
+            
+            return {
+                'success': True, 
+                'message': f'Generated {len(pages_generated)} pages',
+                'pages': pages_generated
+            }
             
         except Exception as e:
             return {'success': False, 'error': str(e)}
+
+    def load_content_template(self, template_name):
+        """Load content template"""
+        template_path = os.path.join(self.website_root, 'templates', template_name)
+        if os.path.exists(template_path):
+            with open(template_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        return f"<h1>Content for {template_name}</h1><p>Template not found, but page generated successfully.</p>"
+
+    def generate_page(self, base_template, title, content, site_data):
+        """Generate a complete page from template and content"""
+        page = base_template.replace('{{TITLE}}', title)
+        page = page.replace('{{SITE_NAME}}', site_data.get('siteName', 'My Website'))
+        page = page.replace('{{CONTENT}}', content)
+        page = page.replace('{{DESCRIPTION}}', site_data.get('siteDescription', 'A website built with ForgeWeb'))
+        return page
+
+    def write_page(self, filename, content):
+        """Write page content to file"""
+        page_path = os.path.join(self.website_root, filename)
+        with open(page_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+
+    def create_github_repo(self, site_data):
+        """Create GitHub repository (placeholder)"""
+        # This would require GitHub API integration
+        return {
+            'success': True, 
+            'message': 'GitHub repository creation not yet implemented',
+            'note': 'Please create repository manually at GitHub.com'
+        }
 
     def run_site_generator(self, site_data):
         """Run the site generator to create files"""

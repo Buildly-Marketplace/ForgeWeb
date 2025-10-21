@@ -1,92 +1,88 @@
 {
-    "site": {
-        "name": "ForgeWeb Demo",
-        "url": "https://yourusername.github.io/forgeweb",
-        "description": "AI-powered static site generator - Built with ForgeWeb by Buildly",
-        "logo": "/assets/forgeweb-logo-512.svg",
-        "favicon": "/favicon.ico",
-        "generator": "ForgeWeb v1.0.0",
-        "author": "Powered by Buildly ForgeWeb",
-        "support_url": "https://docs.buildly.io/forgeweb",
-        "labs_chat": "https://labs.buildly.io/chat"
-    },
-    "content": {
-        "articlesFolder": "articles/",
-        "indexFile": "articles.html",
-        "defaultCategory": "General",
-        "categories": [
-            {"id": "ForgeWeb", "name": "ForgeWeb Features", "color": "buildly-primary"},
-            {"id": "AI", "name": "Artificial Intelligence", "color": "buildly-accent"},
-            {"id": "Web Development", "name": "Web Development", "color": "buildly-primary"},
-            {"id": "Static Sites", "name": "Static Site Generators", "color": "buildly-primary"},
-            {"id": "Tutorials", "name": "Tutorials & Guides", "color": "buildly-secondary"},
-            {"id": "Buildly", "name": "Buildly Platform", "color": "buildly-accent"}
-        ],
-        "folders": [
-            {"id": "articles/", "name": "articles/", "description": "Main articles folder"},
-            {"id": "blog/", "name": "blog/", "description": "Blog posts"},
-            {"id": "tutorials/", "name": "tutorials/", "description": "Step-by-step guides"},
-            {"id": "docs/", "name": "docs/", "description": "Documentation pages"},
-            {"id": "", "name": "root folder", "description": "Website root"}
-        ]
-    },
-    "branding": {
-        "primaryColor": "#1b5fa3",
-        "secondaryColor": "#144a84", 
-        "accentColor": "#f9943b",
-        "darkColor": "#1F2937",
-        "lightColor": "#F3F4F6",
-        "font": "Inter"
-    },
-    "social": {
-        "defaultHashtags": ["#ForgeWeb", "#BuildlyAI", "#StaticSiteGenerator", "#AIWriting"],
-        "platforms": {
-            "twitter": {
-                "enabled": true,
-                "characterLimit": 280,
-                "template": "New article: \"{title}\"\n\n{description}\n\n{hashtags}"
-            },
-            "linkedin": {
-                "enabled": true,
-                "characterLimit": 3000,
-                "template": "Just published: \"{title}\"\n\n{description}\n\nWhat are your thoughts on this topic?\n\n{hashtags}"
-            },
-            "facebook": {
-                "enabled": true,
-                "characterLimit": 63206,
-                "template": "Check out our latest article: \"{title}\"\n\n{description}\n\nWhat's your experience with this? Share your thoughts below!\n\n{hashtags}"
-            }
-        }
-    },
-    "features": {
-        "aiEnabled": true,
-        "socialEnabled": true,
-        "fileEditing": true,
-        "autoSave": true,
-        "indexUpdating": true,
-        "githubPages": true,
-        "seoOptimization": true,
-        "responsiveDesign": true
-    },
-    "support": {
-        "documentation": "https://docs.buildly.io/forgeweb",
-        "community": "https://github.com/buildlyio/forgeweb/discussions",
-        "labs_chat": "https://labs.buildly.io/chat",
-        "collab_hub": "https://collab.buildly.io/marketplace",
-        "tier": "community"
-    },
-    "buildly": {
-        "product": "ForgeWeb",
-        "version": "1.0.0",
-        "license": "BSL-1.1",
-        "company": "Buildly Inc.",
-        "website": "https://buildly.io",
-        "forge_family": true
-    },
-    "development": {
-        "serverPort": 8000,
-        "saveEndpoint": "/save-file",
-        "corsEnabled": true,
-        "debugMode": false
+  "site": {
+    "name": "Alternate API Test",
+    "url": "https://username.github.io/repository",
+    "description": "Testing alternate endpoint",
+    "author": "Website Owner",
+    "generator": "ForgeWeb v1.0.0",
+    "support_url": "https://docs.buildly.io/forgeweb"
+  },
+  "content": {
+    "site_type": "blog",
+    "include_about": true,
+    "include_contact": true,
+    "include_blog": true,
+    "include_portfolio": false,
+    "include_services": false,
+    "include_sample_content": true
+  },
+  "branding": {
+    "primaryColor": "#1b5fa3",
+    "secondaryColor": "#144a84",
+    "accentColor": "#f9943b",
+    "darkColor": "#1F2937",
+    "lightColor": "#F3F4F6",
+    "font": "Inter"
+  },
+  "social": {
+    "defaultHashtags": [
+      "#ForgeWeb",
+      "#BuildlyAI",
+      "#StaticSiteGenerator",
+      "#AIWriting"
+    ],
+    "platforms": {
+      "twitter": {
+        "enabled": true,
+        "characterLimit": 280,
+        "template": "New article: \"{title}\"\n\n{description}\n\n{hashtags}"
+      },
+      "linkedin": {
+        "enabled": true,
+        "characterLimit": 3000,
+        "template": "Just published: \"{title}\"\n\n{description}\n\nWhat are your thoughts on this topic?\n\n{hashtags}"
+      },
+      "facebook": {
+        "enabled": true,
+        "characterLimit": 63206,
+        "template": "Check out our latest article: \"{title}\"\n\n{description}\n\nWhat's your experience with this? Share your thoughts below!\n\n{hashtags}"
+      }
     }
+  },
+  "features": {
+    "aiEnabled": true,
+    "socialEnabled": true,
+    "fileEditing": true,
+    "autoSave": true,
+    "indexUpdating": true,
+    "githubPages": true,
+    "seoOptimization": true,
+    "responsiveDesign": true
+  },
+  "support": {
+    "documentation": "https://docs.buildly.io/forgeweb",
+    "community": "https://github.com/buildlyio/forgeweb/discussions",
+    "labs_chat": "https://labs.buildly.io/chat",
+    "collab_hub": "https://collab.buildly.io/marketplace",
+    "tier": "community"
+  },
+  "buildly": {
+    "product": "ForgeWeb",
+    "version": "1.0.0",
+    "license": "BSL-1.1",
+    "company": "Buildly Inc.",
+    "website": "https://buildly.io",
+    "forge_family": true
+  },
+  "development": {
+    "serverPort": 8000,
+    "saveEndpoint": "/save-file",
+    "corsEnabled": true,
+    "debugMode": false
+  },
+  "github": {
+    "username": "",
+    "repository": "",
+    "pages_enabled": true
+  }
 }
