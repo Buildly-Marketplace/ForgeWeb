@@ -1,6 +1,6 @@
 name: ForgeWeb
 slug: forgeweb
-version: 1.0.0
+version: 0.5.0
 summary: AI-powered static site generator with local admin interface and GitHub Pages deployment.
 description: |
   ForgeWeb is a complete static site management solution that combines AI-assisted content creation 

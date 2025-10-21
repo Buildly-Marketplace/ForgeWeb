@@ -4,7 +4,7 @@
     "url": "https://username.github.io/repository",
     "description": "A modern website built with ForgeWeb AI-powered site generator",
     "author": "Website Owner",
-    "generator": "ForgeWeb v1.0.0",
+    "generator": "ForgeWeb v0.5.0",
     "support_url": "https://docs.buildly.io/forgeweb"
   },
   "content": {

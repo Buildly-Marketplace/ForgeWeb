@@ -1,7 +1,7 @@
 /**
  * Buildly Head JavaScript
  * Common utilities and global configuration for ForgeWeb
- * Version: 1.0.0
+ * Version: 0.5.0
  */
 
 (function() {
@@ -11,7 +11,7 @@
     window.ForgeWeb = window.ForgeWeb || {};
     
     // Set version and basic config
-    window.ForgeWeb.version = '1.0.0';
+    window.ForgeWeb.version = '0.5.0';
     window.ForgeWeb.appName = 'ForgeWeb';
     window.ForgeWeb.apiBase = '/api';
     

@@ -28,7 +28,7 @@ Before installing ForgeWeb, ensure you have:
 
 1. **Download ForgeWeb**
    - Go to [ForgeWeb Releases](https://github.com/buildlyio/forgeweb/releases)
-   - Download the latest `forgeweb-v1.0.0.zip`
+   - Download the latest `forgeweb-v0.5.0.zip`
    - Extract to your desired location
 
 2. **Start ForgeWeb**
