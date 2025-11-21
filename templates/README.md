@@ -1,5 +1,7 @@
 # ForgeWeb Site Generator Templates
 
+> **📚 For technical documentation, see [../devdocs/](../devdocs/)**
+
 This directory contains HTML templates for generating different types of pages and sites with ForgeWeb.
 
 ## Template Variables

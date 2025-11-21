@@ -2,19 +2,18 @@
   "site": {
     "name": "Build a Startup in a Day",
     "url": "https://buildly-release-management.github.io/startupinaday",
-    "description": "A guide, and education site for building software startups.  A collaboration with Korgi and Buildly",
+    "description": "Brought to you by Buildly and Korgi",
     "author": "Buildly",
     "generator": "ForgeWeb v1.0.0",
     "support_url": "https://docs.buildly.io/forgeweb"
   },
   "design": {
-    "system": "foundation",
+    "system": "tailwind",
     "cdn_urls": [
-      "https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/css/foundation.min.css",
-      "https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/js/foundation.min.js"
+      "https://cdn.tailwindcss.com"
     ],
     "custom_css": "",
-    "body_classes": ""
+    "body_classes": "bg-gray-50"
   },
   "content": {
     "site_type": "business",
@@ -91,7 +90,7 @@
   },
   "github": {
     "username": "buildly-release-management",
-    "repository": "startupinaday",
+    "repo": "startupinaday",
     "pages_enabled": true
   }
 }

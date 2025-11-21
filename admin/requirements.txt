@@ -20,3 +20,4 @@ markdown==3.5.1
 # Development utilities
 watchdog==3.0.0
 colorama==0.4.6
+jinja2

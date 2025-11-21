@@ -6,7 +6,8 @@ ForgeWeb is a simple, powerful static site generator with a local admin interfac
 
 ![ForgeWeb Logo](assets/forgeweb-logo-512.png)
 
-> **👉 Quick Setup:** See [SETUP-REPO.md](SETUP-REPO.md) for the complete setup guide!
+> **👉 Quick Setup:** See [devdocs/SETUP-REPO.md](devdocs/SETUP-REPO.md) for the complete setup guide!
+> **📚 Full Documentation:** Browse [devdocs/](devdocs/) for all technical documentation
 
 ## 🏗️ Simple Architecture
 
@@ -368,10 +369,16 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 ## 📚 Documentation
 
-- **[Installation Guide](INSTALL.md)**: Detailed setup instructions
-- **[User Manual](docs/USER_GUIDE.md)**: Complete feature documentation
-- **[API Reference](docs/API.md)**: Integration and customization
-- **[Deployment Guide](docs/DEPLOYMENT.md)**: Hosting options and setup
+All technical documentation is organized in the [devdocs/](devdocs/) folder:
+
+- **[Installation Guide](devdocs/INSTALL.md)** - Complete setup instructions
+- **[Architecture](devdocs/ARCHITECTURE.md)** - System architecture and design
+- **[Branding System](devdocs/BRANDING.md)** - Customization and branding
+- **[Static Assets](devdocs/STATIC-ASSETS.md)** - CSS/JS asset management
+- **[Deployment](devdocs/DEPLOYMENT.md)** - Deployment guides
+- **[Repository Setup](devdocs/SETUP-REPO.md)** - GitHub Pages setup
+
+See the [devdocs README](devdocs/README.md) for the complete documentation index.
 
 ## 🆘 Support
 
@@ -409,7 +416,7 @@ ForgeWeb is developed by [Buildly](https://buildly.io), the AI-powered product d
 
 ---
 
-**Ready to get started?** Check out the [Installation Guide](INSTALL.md) or try ForgeWeb today!
+**Ready to get started?** Check out the [Installation Guide](devdocs/INSTALL.md) or try ForgeWeb today!
 
 [![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy-GitHub%20Pages-brightgreen)](https://github.com/buildlyio/forgeweb-template/generate)
 [![Docker](https://img.shields.io/badge/Docker-Available-blue)](https://github.com/buildlyio/forgeweb/pkgs/container/forgeweb)

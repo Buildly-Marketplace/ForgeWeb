@@ -1,0 +1,1234 @@
+{% extends "base.html" %}
+
+{% block title %}Buildly Page Editor - Full Page HTML Editor{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/dracula.min.css">
+<style>
+.CodeMirror {
+            height: 100% !important;
+        }
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/css/css.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/edit/closetag.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/addon/fold/xml-fold.min.js"></script>
+<script src="js/file-manager.js"></script>
+<script src="js/admin-nav.js"></script>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+    <header class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-buildly-primary">Page Editor</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="saveBtn" class="bg-buildly-primary text-white px-4 py-2 rounded-md hover:bg-buildly-secondary transition-colors">
+                        Save Page
+                    </button>
+                    <a href="editor.html" class="text-buildly-primary hover:text-buildly-secondary">Article Editor</a>
+                    <a href="articles-manager.html" class="text-buildly-primary hover:text-buildly-secondary">Articles Manager</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="flex" style="height: calc(100vh - 4rem);">
+        
+        <!-- Left Panel - Navigation + AI Helper -->
+        <div class="w-80 border-r border-gray-200 flex flex-col">
+            <!-- Navigation Sidebar -->
+            
+            
+            <!-- AI Helper Panel -->
+            <div class="flex-1 flex flex-col bg-white" id="aiHelperPanel">
+                <div class="bg-gradient-to-r from-buildly-primary to-buildly-secondary px-4 py-2 flex justify-between items-center border-t border-white border-opacity-20">
+                    <h2 class="font-semibold text-white flex items-center text-sm">
+                        <span class="mr-2">🤖</span>
+                        AI Helper
+                    </h2>
+                    <button 
+                        id="popoutAiHelper" 
+                        class="text-white hover:text-gray-200 text-xs px-2 py-1 rounded hover:bg-white hover:bg-opacity-20 transition-colors"
+                        title="Pop out AI Helper (Coming Soon)"
+                    >
+                        ↗️ Pop Out
+                    </button>
+                </div>
+                <div class="flex-1 flex flex-col" style="min-height: 0;">
+                    <!-- Chat Messages -->
+                    <div id="aiChatMessages" class="flex-1 overflow-y-auto p-3 space-y-2" style="min-height: 0;">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-2">
+                            <div class="text-xs text-blue-600 font-medium mb-1">AI Assistant</div>
+                            <div class="text-xs text-gray-700">
+                                Hi! I can help with Buildly's design system:
+                                <ul class="list-disc list-inside mt-1 text-xs space-y-0.5">
+                                    <li>HTML structure</li>
+                                    <li>CSS classes</li>
+                                    <li>Responsive design</li>
+                                    <li>New sections</li>
+                                </ul>
+                                <div class="mt-1 text-xs text-blue-600">
+                                    Just describe what you need!
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Input Area -->
+                    <div class="border-t border-gray-200 p-3">
+                        <div class="flex space-x-2">
+                            <input 
+                                type="text" 
+                                id="aiPrompt" 
+                                placeholder="Ask for help..."
+                                class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-buildly-primary"
+                            >
+                            <button 
+                                id="sendAiPrompt" 
+                                class="bg-buildly-primary text-white px-3 py-1 rounded text-xs hover:bg-buildly-secondary transition-colors"
+                            >
+                                Send
+                            </button>
+                        </div>
+                        <div class="flex items-center justify-between mt-2">
+                            <div class="flex items-center space-x-2 text-xs text-gray-500">
+                                <span id="aiStatus">Ready</span>
+                            </div>
+                            <button 
+                                id="clearAiChat" 
+                                class="text-xs text-gray-400 hover:text-gray-600"
+                            >
+                                Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel - HTML Editor -->
+        <div class="flex-1 bg-white border-r border-gray-200 flex flex-col">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="font-semibold text-gray-800">HTML Editor</h2>
+                <div class="flex items-center space-x-2">
+                    <label class="text-sm text-gray-600">File:</label>
+                    <select id="fileSelect" class="border border-gray-300 rounded px-2 py-1 text-sm">
+                        <option value="">Select a page to edit...</option>
+                        <option value="index.html">index.html (Homepage)</option>
+                        <option value="labs.html">labs.html (Labs Page)</option>
+                        <option value="use-cases.html">use-cases.html (Use Cases)</option>
+                        <option value="pricing.html">pricing.html (Pricing)</option>
+                        <option value="articles.html">articles.html (Articles Index)</option>
+                        <option value="team.html">team.html (Team Page)</option>
+                        <option value="rad-core.html">rad-core.html (RAD Core)</option>
+                        <option value="rad-process.html">rad-process.html (RAD Process)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex-1 relative" style="min-height: 0;">
+                <textarea id="htmlEditor" class="w-full h-full p-4 font-mono text-sm resize-none border-none outline-none"></textarea>
+            </div>
+        </div>
+
+        <!-- Right Panel - Live Preview -->
+        <div class="flex-1 bg-white border-r border-gray-200 flex flex-col">
+            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="font-semibold text-gray-800">Live Preview</h2>
+                <div class="flex items-center space-x-2">
+                    <button id="refreshPreview" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">
+                        Refresh
+                    </button>
+                    <button id="openNewTab" class="bg-buildly-primary text-white px-3 py-1 rounded text-sm hover:bg-buildly-secondary">
+                        Open in New Tab
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1">
+                <iframe id="previewFrame" class="w-full h-full border-none" sandbox="allow-scripts allow-forms"></iframe>
+            </div>
+        </div>
+
+        <!-- Right Panel - Page Metadata & Navigation -->
+        <div class="w-80 bg-gray-50 flex flex-col overflow-y-auto">
+            <div class="bg-gray-100 px-4 py-3 border-b border-gray-200">
+                <h2 class="font-semibold text-gray-800">Page Settings</h2>
+            </div>
+            
+            <div class="p-4 space-y-6">
+                <!-- Page Information -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 class="font-semibold text-gray-800 mb-3">Page Information</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Page Title</label>
+                            <input type="text" id="pageTitle" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="Page title for browser tab">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Meta Description</label>
+                            <textarea id="pageDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" rows="3" placeholder="SEO description for search engines"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Keywords</label>
+                            <input type="text" id="pageKeywords" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="SEO keywords, comma separated">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Canonical URL</label>
+                            <input type="text" id="canonicalUrl" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="https://www.buildly.io/page.html">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Navigation Settings -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 class="font-semibold text-gray-800 mb-3">Navigation & IA</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Page Type</label>
+                            <select id="pageType" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                                <option value="homepage">Homepage</option>
+                                <option value="product">Product Page</option>
+                                <option value="feature">Feature Page</option>
+                                <option value="pricing">Pricing</option>
+                                <option value="about">About/Team</option>
+                                <option value="resources">Resources</option>
+                                <option value="landing">Landing Page</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Navigation Priority</label>
+                            <select id="navPriority" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                                <option value="primary">Primary Navigation</option>
+                                <option value="secondary">Secondary Navigation</option>
+                                <option value="footer">Footer Only</option>
+                                <option value="none">Not in Navigation</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Parent Page</label>
+                            <select id="parentPage" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
+                                <option value="">Top Level</option>
+                                <option value="index.html">Homepage</option>
+                                <option value="labs.html">Labs</option>
+                                <option value="use-cases.html">Use Cases</option>
+                                <option value="pricing.html">Pricing</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Menu Label</label>
+                            <input type="text" id="menuLabel" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="Text shown in navigation">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Social & Open Graph -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 class="font-semibold text-gray-800 mb-3">Social Media</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">OG Title</label>
+                            <input type="text" id="ogTitle" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="Social media title">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">OG Description</label>
+                            <textarea id="ogDescription" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" rows="2" placeholder="Social media description"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">OG Image</label>
+                            <input type="text" id="ogImage" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="https://www.buildly.io/media/image.jpg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Page Actions -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 class="font-semibold text-gray-800 mb-3">Actions</h3>
+                    <div class="space-y-2">
+                        <button id="updateMetadata" class="w-full bg-buildly-accent text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors">
+                            Update Metadata
+                        </button>
+                        <button id="validateHtml" class="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">
+                            Validate HTML
+                        </button>
+                        <button id="exportPage" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors">
+                            Export Page
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recent Files -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 class="font-semibold text-gray-800 mb-3">Recent Files</h3>
+                    <div id="recentFiles" class="space-y-1">
+                        <p class="text-sm text-gray-500">No recent files</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Bar -->
+    <div class="bg-gray-800 text-white px-4 py-2 text-sm flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+            <span id="fileStatus">No file loaded</span>
+            <span id="cursorPosition">Line 1, Col 1</span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span id="validationStatus" class="text-green-400">HTML Valid</span>
+            <span>•</span>
+            <span>Buildly Page Editor</span>
+        </div>
+    </div>
+
+    <script>
+        class AIHelper {
+            constructor(pageEditor) {
+                this.pageEditor = pageEditor;
+                this.isProcessing = false;
+                
+                // Initialize and show status
+                console.log('🤖 AI Assistant initialized');
+                this.updateStatus('AI Ready');
+                
+                // Add initialization message after a brief delay
+                setTimeout(() => {
+                    this.addMessage('assistant', 'AI Assistant is ready! You can ask me to help with:\n\n• Creating hero sections\n• Adding new content sections\n• Modifying existing elements\n• Applying Buildly design system\n\nJust type your request and I\'ll provide specific HTML code!', null, 'info');
+                }, 500);
+                
+                this.buildlyDesignSystem = {
+                    colors: {
+                        primary: '#1b5fa3',
+                        secondary: '#144a84',
+                        accent: '#f9943b',
+                        dark: '#1F2937',
+                        light: '#F3F4F6'
+                    },
+                    classes: {
+                        buttons: ['bg-buildly-primary', 'bg-buildly-secondary', 'bg-buildly-accent', 'hover:bg-buildly-secondary'],
+                        text: ['text-buildly-primary', 'text-buildly-secondary', 'text-buildly-accent', 'text-buildly-dark'],
+                        backgrounds: ['bg-buildly-primary', 'bg-buildly-light', 'bg-gradient-to-r from-buildly-primary to-buildly-secondary'],
+                        layout: ['max-w-7xl', 'mx-auto', 'px-4', 'sm:px-6', 'lg:px-8', 'py-20'],
+                        spacing: ['space-y-4', 'space-y-8', 'space-y-12', 'space-x-4', 'gap-6', 'gap-8'],
+                        typography: ['text-3xl', 'text-4xl', 'font-bold', 'font-semibold', 'text-lg', 'text-xl']
+                    },
+                    patterns: {
+                        hero: 'Hero sections with gradient backgrounds, large headings, and CTA buttons',
+                        section: 'Standard sections with max-width containers, padding, and centered content',
+                        button: 'Primary buttons with buildly-primary background and hover effects',
+                        card: 'Cards with white background, shadow, and rounded corners'
+                    }
+                };
+            }
+
+            async sendPrompt() {
+                const promptInput = document.getElementById('aiPrompt');
+                const prompt = promptInput.value.trim();
+                
+                if (!prompt) {
+                    this.addMessage('assistant', 'Please enter a prompt to get help!', null, 'info');
+                    return;
+                }
+                
+                if (this.isProcessing) {
+                    this.addMessage('assistant', 'Please wait, I\'m still processing your previous request...', null, 'info');
+                    return;
+                }
+
+                this.isProcessing = true;
+                this.updateStatus('Processing...');
+                
+                // Add user message to chat
+                this.addMessage('user', prompt);
+                promptInput.value = '';
+
+                try {
+                    const response = await this.processPrompt(prompt);
+                    this.addMessage('assistant', response.message, response.code, 'normal', response.action, response.position, response.target);
+                } catch (error) {
+                    console.error('AI Assistant Error:', error);
+                    this.addMessage('assistant', `Sorry, I encountered an error: ${error.message}`, null, 'error');
+                } finally {
+                    this.isProcessing = false;
+                    this.updateStatus('Ready');
+                }
+            }
+
+            async processPrompt(prompt) {
+                // Get current HTML content
+                const currentHtml = this.pageEditor.editor ? this.pageEditor.editor.getValue() : '';
+                const currentFile = this.pageEditor.currentFile || 'unknown';
+
+                // Get the chosen design system
+                const designSystem = localStorage.getItem('forgeweb_design_system') || 'tailwind';
+                const designConfig = await this.getDesignSystemConfig();
+                
+                // Analyze current HTML structure
+                const htmlAnalysis = this.analyzeHtml(currentHtml);
+
+                // Create rich context about the site
+                const siteContext = {
+                    designSystem: designSystem,
+                    framework: designSystem.toUpperCase(),
+                    currentFile: currentFile,
+                    hasContent: currentHtml.length > 200,
+                    structure: htmlAnalysis,
+                    cdnUrls: designConfig.cdn_urls || [],
+                    bodyClasses: designConfig.body_classes || ''
+                };
+
+                // Generate intelligent response with context
+                const response = this.generateIntelligentResponse(prompt, currentHtml, siteContext);
+                return response;
+            }
+            
+            analyzeHtml(html) {
+                return {
+                    hasNav: /<nav|navbar|top-bar|uk-navbar/i.test(html),
+                    hasHero: /<section[^>]*hero|<div[^>]*hero/i.test(html),
+                    hasCards: /card|feature/i.test(html),
+                    hasFooter: /<footer/i.test(html),
+                    hasForm: /<form/i.test(html),
+                    title: (html.match(/<title[^>]*>([^<]+)<\/title>/i) || [])[1] || 'Untitled',
+                    bodyContent: html.replace(/<head[^>]*>[\s\S]*?<\/head>/i, '').replace(/<script[\s\S]*?<\/script>/gi, '').length > 500
+                };
+            }
+
+            async getDesignSystemConfig() {
+                try {
+                    const response = await fetch('/api/design-system');
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.design || {};
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch design system config:', error);
+                }
+                
+                // Fallback to localStorage
+                return {
+                    system: localStorage.getItem('forgeweb_design_system') || 'tailwind',
+                    cdn_urls: localStorage.getItem('forgeweb_template_cdn') ? [localStorage.getItem('forgeweb_template_cdn')] : [],
+                    body_classes: localStorage.getItem('forgeweb_template_bodyclass') || ''
+                };
+            }
+
+            getDesignSystemInstructions(system) {
+                const instructions = {
+                    tailwind: `Use Tailwind CSS utility classes:
+- Layout: Use flexbox (flex, items-center) and grid (grid, grid-cols-3)
+- Spacing: Use p-4, m-4, px-6, py-8, gap-4, space-x-4
+- Colors: Use bg-blue-500, text-white, hover:bg-blue-600
+- Typography: Use text-xl, font-bold, leading-tight
+- Responsive: Use md:, lg:, xl: prefixes (e.g., md:grid-cols-3)
+- Example button: <button class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600">Click Me</button>`,
+
+                    daisyui: `Use DaisyUI components with Tailwind:
+- Buttons: Use btn, btn-primary, btn-secondary, btn-accent, btn-ghost
+- Cards: Use card, card-body, card-title, card-actions
+- Layout: Use hero, hero-content, navbar, footer, drawer
+- Forms: Use input, input-bordered, select, checkbox, radio
+- Utilities: Use badge, alert, toast, modal, dropdown
+- Example: <button class="btn btn-primary">Click Me</button>
+- Example: <div class="card bg-base-100 shadow-xl"><div class="card-body">Content</div></div>`,
+
+                    bootstrap: `Use Bootstrap 5 classes and components:
+- Layout: Use container, row, col-md-4, d-flex, justify-content-center
+- Buttons: Use btn, btn-primary, btn-secondary, btn-lg
+- Cards: Use card, card-body, card-title, card-text
+- Navigation: Use navbar, nav, nav-item, nav-link
+- Utilities: Use m-3, p-3, mt-4, mb-5, text-center, bg-primary
+- Example button: <button class="btn btn-primary btn-lg">Click Me</button>
+- Example card: <div class="card"><div class="card-body"><h5 class="card-title">Title</h5></div></div>`,
+
+                    bulma: `Use Bulma CSS classes:
+- Layout: Use container, columns, column, is-4, is-centered
+- Buttons: Use button, is-primary, is-large, is-rounded
+- Cards: Use card, card-content, card-header, card-footer
+- Elements: Use box, notification, message, tag, title, subtitle
+- Modifiers: Use is-primary, is-large, is-fullwidth, has-text-centered
+- Example button: <button class="button is-primary is-large">Click Me</button>
+- Example: <div class="columns"><div class="column is-4">Content</div></div>`,
+
+                    uikit: `Use UIkit classes and attributes:
+- Layout: Use uk-container, uk-grid, uk-width-1-3, uk-flex, uk-flex-center
+- Buttons: Use uk-button, uk-button-primary, uk-button-large
+- Cards: Use uk-card, uk-card-body, uk-card-title, uk-card-default
+- Navigation: Use uk-navbar, uk-nav, uk-subnav
+- Attributes: Use uk-grid, uk-lightbox, uk-slider, uk-accordion
+- Example button: <button class="uk-button uk-button-primary uk-button-large">Click Me</button>
+- Example grid: <div class="uk-grid" uk-grid><div class="uk-width-1-3">Content</div></div>`,
+
+                    foundation: `Use Foundation 6 classes:
+- Layout: Use grid-container, grid-x, cell, medium-4, large-6
+- Buttons: Use button, primary, secondary, large, expanded
+- Cards: Use card, card-divider, card-section
+- Navigation: Use top-bar, menu, menu-text
+- Utilities: Use text-center, float-left, show-for-medium, hide-for-small
+- Example button: <a class="button primary large">Click Me</a>
+- Example grid: <div class="grid-x"><div class="cell medium-4">Content</div></div>`
+                };
+
+                return instructions[system] || instructions.tailwind;
+            }
+
+            generateIntelligentResponse(prompt, currentHtml, context) {
+                const lowerPrompt = prompt.toLowerCase();
+                const examples = this.getFrameworkExamples(context.designSystem);
+                
+                // Determine if we should insert or replace
+                const shouldInsert = lowerPrompt.includes('add') || lowerPrompt.includes('insert') || lowerPrompt.includes('create');
+                const shouldReplace = lowerPrompt.includes('replace') || lowerPrompt.includes('change') || lowerPrompt.includes('update');
+                
+                let response = { message: '', code: null, action: 'show' };
+                
+                // Hero section
+                if (lowerPrompt.includes('hero') || lowerPrompt.includes('banner')) {
+                    response = {
+                        message: `I'll ${context.structure.hasHero ? 'update' : 'add'} a hero section using ${context.framework}. Click "Apply to Editor" to insert it.`,
+                        code: examples.hero,
+                        action: 'insert',
+                        position: 'afterBody'
+                    };
+                }
+                // Buttons
+                else if (lowerPrompt.includes('button') || lowerPrompt.includes('cta')) {
+                    response = {
+                        message: `Here are ${context.framework}-styled buttons. Click "Apply to Editor" to add them at your cursor position.`,
+                        code: examples.buttons,
+                        action: 'insert',
+                        position: 'cursor'
+                    };
+                }
+                // Navigation
+                else if (lowerPrompt.includes('nav') || lowerPrompt.includes('menu') || lowerPrompt.includes('header')) {
+                    if (context.structure.hasNav && !shouldInsert) {
+                        response = {
+                            message: `I see you already have a navigation. I can help you update it or add a new one. The code below will replace your current nav if you apply it.`,
+                            code: examples.nav,
+                            action: 'replace',
+                            target: 'nav'
+                        };
+                    } else {
+                        response = {
+                            message: `Adding a navigation bar using ${context.framework}. This will be inserted at the top of your page body.`,
+                            code: examples.nav,
+                            action: 'insert',
+                            position: 'afterBody'
+                        };
+                    }
+                }
+                // Cards/Features
+                else if (lowerPrompt.includes('card') || lowerPrompt.includes('feature')) {
+                    response = {
+                        message: `Creating feature cards with ${context.framework}. These will be inserted at your cursor position.`,
+                        code: examples.cards,
+                        action: 'insert',
+                        position: 'cursor'
+                    };
+                }
+                // Section
+                else if (lowerPrompt.includes('section') || lowerPrompt.includes('layout')) {
+                    response = {
+                        message: `Adding a content section using ${context.framework}. You can customize the text after applying.`,
+                        code: examples.section,
+                        action: 'insert',
+                        position: 'cursor'
+                    };
+                }
+                // Footer
+                else if (lowerPrompt.includes('footer')) {
+                    response = {
+                        message: `I'll add a footer section. Since this typically goes at the end, it will be inserted before the closing body tag.`,
+                        code: this.getFooterExample(context.designSystem),
+                        action: 'insert',
+                        position: 'beforeBodyClose'
+                    };
+                }
+                // Default help
+                else {
+                    const suggestions = [];
+                    if (!context.structure.hasNav) suggestions.push('"Add a navigation menu"');
+                    if (!context.structure.hasHero) suggestions.push('"Create a hero section"');
+                    if (!context.structure.hasCards) suggestions.push('"Add feature cards"');
+                    if (!context.structure.hasFooter) suggestions.push('"Add a footer"');
+                    
+                    response = {
+                        message: `I'm analyzing your page... I can help you with:
+
+📋 Current Page: "${context.structure.title}"
+🎨 Design System: ${context.framework}
+📄 File: ${context.currentFile}
+
+💡 Suggestions based on your page:
+${suggestions.length > 0 ? suggestions.map(s => `  • ${s}`).join('\n') : '  • Your page looks complete!'}
+
+🔧 I can also help with:
+  • "Add buttons"
+  • "Create a section"
+  • "Add a form"
+  • "Insert an image gallery"
+
+All code uses ${context.framework} and will be inserted directly into your editor!`,
+                        code: null,
+                        action: 'show'
+                    };
+                }
+                
+                return response;
+            }
+            
+            getFooterExample(system) {
+                const footers = {
+                    tailwind: `<footer class="bg-gray-800 text-white py-12">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="grid md:grid-cols-3 gap-8">
+            <div>
+                <h3 class="text-lg font-bold mb-4">About Us</h3>
+                <p class="text-gray-400">Building amazing websites with modern tools.</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold mb-4">Quick Links</h3>
+                <ul class="space-y-2">
+                    <li><a href="/" class="text-gray-400 hover:text-white">Home</a></li>
+                    <li><a href="/about.html" class="text-gray-400 hover:text-white">About</a></li>
+                    <li><a href="/contact.html" class="text-gray-400 hover:text-white">Contact</a></li>
+                </ul>
+            </div>
+            <div>
+                <h3 class="text-lg font-bold mb-4">Contact</h3>
+                <p class="text-gray-400">Email: info@example.com</p>
+            </div>
+        </div>
+        <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; 2025 Your Company. All rights reserved.</p>
+        </div>
+    </div>
+</footer>`,
+                    daisyui: `<footer class="footer p-10 bg-neutral text-neutral-content">
+    <div>
+        <span class="footer-title">About Us</span>
+        <p>Building amazing websites with modern tools.</p>
+    </div>
+    <div>
+        <span class="footer-title">Quick Links</span>
+        <a class="link link-hover" href="/">Home</a>
+        <a class="link link-hover" href="/about.html">About</a>
+        <a class="link link-hover" href="/contact.html">Contact</a>
+    </div>
+    <div>
+        <span class="footer-title">Contact</span>
+        <p>Email: info@example.com</p>
+    </div>
+</footer>`,
+                    bootstrap: `<footer class="bg-dark text-light py-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h5>About Us</h5>
+                <p>Building amazing websites with modern tools.</p>
+            </div>
+            <div class="col-md-4">
+                <h5>Quick Links</h5>
+                <ul class="list-unstyled">
+                    <li><a href="/" class="text-light">Home</a></li>
+                    <li><a href="/about.html" class="text-light">About</a></li>
+                    <li><a href="/contact.html" class="text-light">Contact</a></li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h5>Contact</h5>
+                <p>Email: info@example.com</p>
+            </div>
+        </div>
+        <hr class="bg-light">
+        <p class="text-center">&copy; 2025 Your Company. All rights reserved.</p>
+    </div>
+</footer>`
+                };
+                return footers[system] || footers.tailwind;
+            }
+
+            getFrameworkExamples(system) {
+                const examples = {
+                    tailwind: {
+                        hero: `<section class="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-20">
+    <div class="max-w-6xl mx-auto px-4 text-center">
+        <h1 class="text-5xl font-bold mb-4">Welcome to My Website</h1>
+        <p class="text-xl mb-8">Build amazing things with Tailwind CSS</p>
+        <div class="space-x-4">
+            <button class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100">Get Started</button>
+            <button class="bg-transparent border-2 border-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600">Learn More</button>
+        </div>
+    </div>
+</section>`,
+                        buttons: `<!-- Primary Button -->
+<button class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+    Primary Button
+</button>
+
+<!-- Secondary Button -->
+<button class="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+    Secondary Button
+</button>
+
+<!-- Outline Button -->
+<button class="border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition">
+    Outline Button
+</button>`,
+                        section: `<section class="py-16 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-4xl font-bold text-center mb-12">Section Title</h2>
+        <p class="text-lg text-gray-600 text-center max-w-3xl mx-auto">
+            Your content goes here. This is a standard section with Tailwind styling.
+        </p>
+    </div>
+</section>`,
+                        cards: `<div class="grid md:grid-cols-3 gap-8">
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <div class="text-4xl mb-4">🚀</div>
+        <h3 class="text-xl font-bold mb-2">Feature One</h3>
+        <p class="text-gray-600">Description of your first feature.</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <div class="text-4xl mb-4">⚡</div>
+        <h3 class="text-xl font-bold mb-2">Feature Two</h3>
+        <p class="text-gray-600">Description of your second feature.</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <div class="text-4xl mb-4">✨</div>
+        <h3 class="text-xl font-bold mb-2">Feature Three</h3>
+        <p class="text-gray-600">Description of your third feature.</p>
+    </div>
+</div>`,
+                        nav: `<nav class="bg-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+            <a href="/" class="text-2xl font-bold text-blue-600">Logo</a>
+            <div class="flex items-center space-x-6">
+                <a href="/" class="text-gray-700 hover:text-blue-600">Home</a>
+                <a href="/about.html" class="text-gray-700 hover:text-blue-600">About</a>
+                <a href="/contact.html" class="text-gray-700 hover:text-blue-600">Contact</a>
+            </div>
+        </div>
+    </div>
+</nav>`
+                    },
+                    daisyui: {
+                        hero: `<div class="hero min-h-screen bg-gradient-to-r from-primary to-secondary">
+    <div class="hero-content text-center text-neutral-content">
+        <div class="max-w-md">
+            <h1 class="mb-5 text-5xl font-bold">Welcome to My Website</h1>
+            <p class="mb-5">Build amazing things with DaisyUI</p>
+            <button class="btn btn-primary">Get Started</button>
+            <button class="btn btn-ghost ml-2">Learn More</button>
+        </div>
+    </div>
+</div>`,
+                        buttons: `<!-- Primary Button -->
+<button class="btn btn-primary">Primary Button</button>
+
+<!-- Secondary Button -->
+<button class="btn btn-secondary">Secondary Button</button>
+
+<!-- Accent Button -->
+<button class="btn btn-accent">Accent Button</button>
+
+<!-- Outline Button -->
+<button class="btn btn-outline btn-primary">Outline Button</button>`,
+                        section: `<section class="py-16 bg-base-200">
+    <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-4xl font-bold text-center mb-12">Section Title</h2>
+        <p class="text-lg text-center max-w-3xl mx-auto">
+            Your content goes here. This is a standard section with DaisyUI styling.
+        </p>
+    </div>
+</section>`,
+                        cards: `<div class="grid md:grid-cols-3 gap-8">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <div class="text-4xl mb-4">🚀</div>
+            <h3 class="card-title">Feature One</h3>
+            <p>Description of your first feature.</p>
+        </div>
+    </div>
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <div class="text-4xl mb-4">⚡</div>
+            <h3 class="card-title">Feature Two</h3>
+            <p>Description of your second feature.</p>
+        </div>
+    </div>
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <div class="text-4xl mb-4">✨</div>
+            <h3 class="card-title">Feature Three</h3>
+            <p>Description of your third feature.</p>
+        </div>
+    </div>
+</div>`,
+                        nav: `<div class="navbar bg-base-100 shadow-lg">
+    <div class="navbar-start">
+        <a href="/" class="btn btn-ghost text-xl">Logo</a>
+    </div>
+    <div class="navbar-center hidden lg:flex">
+        <ul class="menu menu-horizontal px-1">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+        </ul>
+    </div>
+</div>`
+                    },
+                    bootstrap: {
+                        hero: `<section class="bg-primary text-white py-5">
+    <div class="container py-5 text-center">
+        <h1 class="display-3 fw-bold mb-4">Welcome to My Website</h1>
+        <p class="lead mb-4">Build amazing things with Bootstrap</p>
+        <button class="btn btn-light btn-lg me-2">Get Started</button>
+        <button class="btn btn-outline-light btn-lg">Learn More</button>
+    </div>
+</section>`,
+                        buttons: `<!-- Primary Button -->
+<button class="btn btn-primary">Primary Button</button>
+
+<!-- Secondary Button -->
+<button class="btn btn-secondary">Secondary Button</button>
+
+<!-- Success Button -->
+<button class="btn btn-success">Success Button</button>
+
+<!-- Outline Button -->
+<button class="btn btn-outline-primary">Outline Button</button>`,
+                        section: `<section class="py-5 bg-light">
+    <div class="container py-5">
+        <h2 class="text-center mb-5 display-5 fw-bold">Section Title</h2>
+        <p class="lead text-center">
+            Your content goes here. This is a standard section with Bootstrap styling.
+        </p>
+    </div>
+</section>`,
+                        cards: `<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <div class="fs-1 mb-3">🚀</div>
+                <h3 class="card-title">Feature One</h3>
+                <p class="card-text">Description of your first feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <div class="fs-1 mb-3">⚡</div>
+                <h3 class="card-title">Feature Two</h3>
+                <p class="card-text">Description of your second feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <div class="fs-1 mb-3">✨</div>
+                <h3 class="card-title">Feature Three</h3>
+                <p class="card-text">Description of your third feature.</p>
+            </div>
+        </div>
+    </div>
+</div>`,
+                        nav: `<nav class="navbar navbar-expand-lg navbar-light bg-light shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">Logo</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/about.html">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contact.html">Contact</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>`
+                    },
+                    bulma: {
+                        hero: `<section class="hero is-primary is-medium">
+    <div class="hero-body">
+        <div class="container has-text-centered">
+            <h1 class="title is-1">Welcome to My Website</h1>
+            <p class="subtitle is-4">Build amazing things with Bulma</p>
+            <button class="button is-light is-medium">Get Started</button>
+            <button class="button is-outlined is-light is-medium ml-2">Learn More</button>
+        </div>
+    </div>
+</section>`,
+                        buttons: `<!-- Primary Button -->
+<button class="button is-primary">Primary Button</button>
+
+<!-- Info Button -->
+<button class="button is-info">Info Button</button>
+
+<!-- Success Button -->
+<button class="button is-success">Success Button</button>
+
+<!-- Outline Button -->
+<button class="button is-outlined is-primary">Outline Button</button>`,
+                        section: `<section class="section">
+    <div class="container">
+        <h2 class="title is-2 has-text-centered mb-6">Section Title</h2>
+        <p class="content has-text-centered">
+            Your content goes here. This is a standard section with Bulma styling.
+        </p>
+    </div>
+</section>`,
+                        cards: `<div class="columns">
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content has-text-centered">
+                <p class="is-size-1 mb-4">🚀</p>
+                <p class="title is-4">Feature One</p>
+                <p class="content">Description of your first feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content has-text-centered">
+                <p class="is-size-1 mb-4">⚡</p>
+                <p class="title is-4">Feature Two</p>
+                <p class="content">Description of your second feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content has-text-centered">
+                <p class="is-size-1 mb-4">✨</p>
+                <p class="title is-4">Feature Three</p>
+                <p class="content">Description of your third feature.</p>
+            </div>
+        </div>
+    </div>
+</div>`,
+                        nav: `<nav class="navbar is-light" role="navigation">
+    <div class="container">
+        <div class="navbar-brand">
+            <a class="navbar-item has-text-weight-bold is-size-4" href="/">Logo</a>
+        </div>
+        <div class="navbar-menu">
+            <div class="navbar-end">
+                <a class="navbar-item" href="/">Home</a>
+                <a class="navbar-item" href="/about.html">About</a>
+                <a class="navbar-item" href="/contact.html">Contact</a>
+            </div>
+        </div>
+    </div>
+</nav>`
+                    },
+                    uikit: {
+                        hero: `<div class="uk-section uk-section-primary uk-section-large uk-light">
+    <div class="uk-container uk-text-center">
+        <h1 class="uk-heading-large">Welcome to My Website</h1>
+        <p class="uk-text-lead">Build amazing things with UIkit</p>
+        <button class="uk-button uk-button-default uk-button-large uk-margin-small-right">Get Started</button>
+        <button class="uk-button uk-button-primary uk-button-large">Learn More</button>
+    </div>
+</div>`,
+                        buttons: `<!-- Primary Button -->
+<button class="uk-button uk-button-primary">Primary Button</button>
+
+<!-- Secondary Button -->
+<button class="uk-button uk-button-secondary">Secondary Button</button>
+
+<!-- Success Button -->
+<button class="uk-button uk-button-success">Success Button</button>
+
+<!-- Default Button -->
+<button class="uk-button uk-button-default">Default Button</button>`,
+                        section: `<div class="uk-section">
+    <div class="uk-container">
+        <h2 class="uk-heading-medium uk-text-center uk-margin-large-bottom">Section Title</h2>
+        <p class="uk-text-lead uk-text-center">
+            Your content goes here. This is a standard section with UIkit styling.
+        </p>
+    </div>
+</div>`,
+                        cards: `<div class="uk-child-width-1-3@m uk-grid-match" uk-grid>
+    <div>
+        <div class="uk-card uk-card-default uk-card-body uk-text-center">
+            <p class="uk-text-large">🚀</p>
+            <h3 class="uk-card-title">Feature One</h3>
+            <p>Description of your first feature.</p>
+        </div>
+    </div>
+    <div>
+        <div class="uk-card uk-card-default uk-card-body uk-text-center">
+            <p class="uk-text-large">⚡</p>
+            <h3 class="uk-card-title">Feature Two</h3>
+            <p>Description of your second feature.</p>
+        </div>
+    </div>
+    <div>
+        <div class="uk-card uk-card-default uk-card-body uk-text-center">
+            <p class="uk-text-large">✨</p>
+            <h3 class="uk-card-title">Feature Three</h3>
+            <p>Description of your third feature.</p>
+        </div>
+    </div>
+</div>`,
+                        nav: `<nav class="uk-navbar-container" uk-navbar>
+    <div class="uk-navbar-left uk-margin-left">
+        <a class="uk-navbar-item uk-logo uk-text-bold" href="/">Logo</a>
+    </div>
+    <div class="uk-navbar-right uk-margin-right">
+        <ul class="uk-navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+        </ul>
+    </div>
+</nav>`
+                    },
+                    foundation: {
+                        hero: `<div class="callout large primary text-center">
+    <div class="grid-container">
+        <h1 class="display">Welcome to My Website</h1>
+        <p class="lead">Build amazing things with Foundation</p>
+        <a href="#" class="button large">Get Started</a>
+        <a href="#" class="button large hollow">Learn More</a>
+    </div>
+</div>`,
+                        buttons: `<!-- Primary Button -->
+<a href="#" class="button primary">Primary Button</a>
+
+<!-- Secondary Button -->
+<a href="#" class="button secondary">Secondary Button</a>
+
+<!-- Success Button -->
+<a href="#" class="button success">Success Button</a>
+
+<!-- Hollow Button -->
+<a href="#" class="button hollow">Hollow Button</a>`,
+                        section: `<div class="grid-container" style="padding: 4rem 0;">
+    <h2 class="text-center" style="margin-bottom: 3rem;">Section Title</h2>
+    <p class="lead text-center">
+        Your content goes here. This is a standard section with Foundation styling.
+    </p>
+</div>`,
+                        cards: `<div class="grid-x grid-margin-x">
+    <div class="cell medium-4">
+        <div class="card">
+            <div class="card-section text-center">
+                <p style="font-size: 3rem;">🚀</p>
+                <h3>Feature One</h3>
+                <p>Description of your first feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-4">
+        <div class="card">
+            <div class="card-section text-center">
+                <p style="font-size: 3rem;">⚡</p>
+                <h3>Feature Two</h3>
+                <p>Description of your second feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-4">
+        <div class="card">
+            <div class="card-section text-center">
+                <p style="font-size: 3rem;">✨</p>
+                <h3>Feature Three</h3>
+                <p>Description of your third feature.</p>
+            </div>
+        </div>
+    </div>
+</div>`,
+                        nav: `<div class="top-bar">
+    <div class="top-bar-left">
+        <ul class="menu">
+            <li class="menu-text"><strong>Logo</strong></li>
+        </ul>
+    </div>
+    <div class="top-bar-right">
+        <ul class="menu">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+        </ul>
+    </div>
+</div>`
+                    }
+                };
+
+                return examples[system] || examples.tailwind;
+            }
+
+            addMessage(sender, message, code = null, type = 'normal', action = 'insert', position = 'cursor', target = null) {
+                const messagesContainer = document.getElementById('aiChatMessages');
+                const messageDiv = document.createElement('div');
+                
+                const bgColor = sender === 'user' ? 'bg-gray-50 border-gray-200' : 
+                               type === 'error' ? 'bg-red-50 border-red-200' : 
+                               type === 'info' ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200';
+                const textColor = sender === 'user' ? 'text-gray-600' : 
+                                 type === 'error' ? 'text-red-600' : 
+                                 type === 'info' ? 'text-green-600' : 'text-blue-600';
+                
+                messageDiv.className = `${bgColor} border rounded-lg p-3`;
+                
+                let content = `
+                    <div class="text-xs ${textColor} font-medium mb-1">
+                        ${sender === 'user' ? 'You' : '🤖 AI Assistant'}
+                    </div>
+                    <div class="text-sm text-gray-700" style="white-space: pre-wrap;">
+                        ${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+                    </div>
+                `;
+                
+                if (code) {
+                    const buttonId = 'apply-btn-' + Date.now();
+                    content += `
+                        <div class="mt-3">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-medium text-gray-500">Generated Code (${action}):</span>
+                                <button id="${buttonId}" 
+                                        class="text-xs bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 font-medium">
+                                    ✨ Apply to Editor
+                                </button>
+                            </div>
+                            <pre class="bg-gray-800 text-green-400 p-3 rounded text-xs overflow-x-auto"><code>${this.escapeHtml(code)}</code></pre>
+                        </div>
+                    `;
+                    
+                    // Set innerHTML first
+                    messageDiv.innerHTML = content;
+                    
+                    // Then add event listener to the button
+                    setTimeout(() => {
+                        const btn = document.getElementById(buttonId);
+                        if (btn) {
+                            btn.addEventListener('click', () => {
+                                this.applyCode(code, action, position, target);
+                            });
+                        }
+                    }, 0);
+                } else {
+                    messageDiv.innerHTML = content;
+                }
+                messagesContainer.appendChild(messageDiv);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+
+            applyCode(code, action = 'insert', position = 'cursor', target = null) {
+                if (!this.pageEditor.editor || !code) return;
+                
+                const editor = this.pageEditor.editor;
+                const currentHtml = editor.getValue();
+                
+                if (action === 'insert') {
+                    if (position === 'cursor') {
+                        // Insert at cursor position
+                        const cursor = editor.getCursor();
+                        editor.replaceRange('\n' + code + '\n', cursor);
+                    } else if (position === 'afterBody') {
+                        // Insert right after <body> tag
+                        const bodyMatch = currentHtml.match(/(<body[^>]*>)/i);
+                        if (bodyMatch) {
+                            const bodyTag = bodyMatch[0];
+                            const bodyIndex = currentHtml.indexOf(bodyTag) + bodyTag.length;
+                            const pos = editor.posFromIndex(bodyIndex);
+                            editor.replaceRange('\n' + code + '\n', pos);
+                        } else {
+                            const cursor = editor.getCursor();
+                            editor.replaceRange('\n' + code + '\n', cursor);
+                        }
+                    } else if (position === 'beforeBodyClose') {
+                        // Insert before </body> tag
+                        const bodyCloseMatch = currentHtml.match(/(<\/body>)/i);
+                        if (bodyCloseMatch) {
+                            const bodyCloseTag = bodyCloseMatch[0];
+                            const bodyCloseIndex = currentHtml.indexOf(bodyCloseTag);
+                            const pos = editor.posFromIndex(bodyCloseIndex);
+                            editor.replaceRange('\n' + code + '\n', pos);
+                        } else {
+                            const cursor = editor.getCursor();
+                            editor.replaceRange('\n' + code + '\n', cursor);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Initialize page editor and AI helper
+        const pageEditor = new PageEditor();
+        const aiHelper = new AIHelper(pageEditor);
+
+        // Load files list from API
+        async function loadFilesList() {
+            try {
+                const response = await fetch('/api/list-html-files');
+                if (response.ok) {
+                    const data = await response.json();
+                    const fileSelect = document.getElementById('fileSelect');
+                    
+                    // Clear existing options except the first one
+                    while (fileSelect.options.length > 1) {
+                        fileSelect.remove(1);
+                    }
+                    
+                    // Add files from API
+                    data.files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.filename;
+                        option.textContent = `${file.filename} - ${file.description}`;
+                        fileSelect.appendChild(option);
+                    });
+                    
+                    console.log(`📁 Loaded ${data.files.length} HTML files`);
+                } else {
+                    console.error('Failed to load files list');
+                }
+            } catch (error) {
+                console.error('Error loading files:', error);
+            }
+        }
+
+        // File selection handler
+        document.getElementById('fileSelect').addEventListener('change', async function() {
+            const filename = this.value;
+            if (!filename) return;
+            
+            try {
+                const response = await fetch(`/api/read-file?file=${encodeURIComponent(filename)}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    pageEditor.editor.setValue(data.content || '');
+                    console.log(`✓ Loaded ${filename}`);
+                } else {
+                    console.error(`Failed to load ${filename}`);
+                    alert(`Could not load ${filename}. Make sure the file exists in the website directory.`);
+                }
+            } catch (error) {
+                console.error('Error loading file:', error);
+                alert('Error loading file: ' + error.message);
+            }
+        });
+
+        // Load files list on page load
+        loadFilesList();
+    </script>
+{% endblock %}
+
+

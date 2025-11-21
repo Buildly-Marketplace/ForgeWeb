@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ForgeWeb Admin{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'buildly-primary': '#1b5fa3',
+                        'buildly-secondary': '#144a84',
+                        'buildly-accent': '#f9943b',
+                        'buildly-dark': '#1F2937'
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="/admin/css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100" data-page="{% block page_id %}{% endblock %}">
+    <div class="flex h-screen">
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-gradient-to-b from-buildly-primary to-buildly-secondary text-white flex-shrink-0">
+            <div class="p-6">
+                <div class="flex items-center space-x-3 mb-8">
+                    <div class="w-10 h-10 bg-buildly-accent rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold text-xl">FW</span>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold">ForgeWeb</h1>
+                        <p class="text-xs text-blue-200">Admin Panel</p>
+                    </div>
+                </div>
+                
+                <nav class="space-y-2">
+                    <a href="/admin/" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="dashboard">
+                        <span>🏠</span>
+                        <span>Dashboard</span>
+                    </a>
+                    <a href="/admin/site-setup.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="site-setup">
+                        <span>⚙️</span>
+                        <span>Site Setup</span>
+                    </a>
+                    <a href="/admin/design-chooser.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="design">
+                        <span>🎨</span>
+                        <span>Design System</span>
+                    </a>
+                    <a href="/admin/branding-manager.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="branding">
+                        <span>🏷️</span>
+                        <span>Branding</span>
+                    </a>
+                    <a href="/admin/navigation-manager.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="navigation">
+                        <span>🧭</span>
+                        <span>Navigation</span>
+                    </a>
+                    <a href="/admin/page-editor.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="pages">
+                        <span>📄</span>
+                        <span>Pages</span>
+                    </a>
+                    <a href="/admin/articles-manager.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="articles">
+                        <span>📝</span>
+                        <span>Articles</span>
+                    </a>
+                    <a href="/admin/html-import.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="import">
+                        <span>📥</span>
+                        <span>Import HTML</span>
+                    </a>
+                    <a href="/admin/settings.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="settings">
+                        <span>🔧</span>
+                        <span>Settings</span>
+                    </a>
+                    <a href="/admin/social.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="social">
+                        <span>📱</span>
+                        <span>Social Media</span>
+                    </a>
+                </nav>
+
+                <div class="mt-8 pt-8 border-t border-white border-opacity-20">
+                    <a href="/" target="_blank" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors text-sm">
+                        <span>👁️</span>
+                        <span>Preview Site</span>
+                    </a>
+                    <a href="/devdocs/" target="_blank" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors text-sm">
+                        <span>📚</span>
+                        <span>Documentation</span>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Header -->
+            <header class="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
+                <div class="px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">{% block page_title %}Dashboard{% endblock %}</h1>
+                            <p class="text-sm text-gray-600 mt-1">{% block page_subtitle %}{% endblock %}</p>
+                        </div>
+                        <div class="flex space-x-3">
+                            {% block header_actions %}{% endblock %}
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 overflow-y-auto p-6">
+                {% block content %}{% endblock %}
+            </main>
+
+            <!-- Footer -->
+            <footer class="bg-white border-t border-gray-200 px-6 py-4 flex-shrink-0">
+                <div class="flex items-center justify-between text-sm text-gray-600">
+                    <div>
+                        <span>ForgeWeb v1.0.0</span>
+                        <span class="mx-2">•</span>
+                        <span>Powered by <a href="https://buildly.io" class="text-buildly-primary hover:underline">Buildly</a></span>
+                    </div>
+                    <div id="save-status" class="text-gray-500">
+                        <!-- Save status updates here -->
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Global Scripts -->
+    <script>
+        // Highlight active nav item based on current page
+        document.addEventListener('DOMContentLoaded', () => {
+            const currentPage = document.body.dataset.page;
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                if (item.dataset.page === currentPage) {
+                    item.classList.add('bg-white', 'bg-opacity-20');
+                }
+            });
+        });
+
+        // Global notification system
+        function showNotification(message, type = 'info') {
+            // Simple notification (can be enhanced with a toast library)
+            const statusEl = document.getElementById('save-status');
+            if (statusEl) {
+                statusEl.textContent = message;
+                statusEl.className = type === 'success' ? 'text-green-600' : 
+                                    type === 'error' ? 'text-red-600' : 'text-gray-600';
+                setTimeout(() => {
+                    statusEl.textContent = '';
+                }, 3000);
+            }
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

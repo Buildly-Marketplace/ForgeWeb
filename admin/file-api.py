@@ -15,6 +15,7 @@ from datetime import datetime
 import threading
 import argparse
 from pathlib import Path
+from jinja2 import Environment, FileSystemLoader, TemplateNotFound
 
 # Import database
 try:
@@ -48,6 +49,15 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
         # ForgeWeb directory (parent of admin/)
         forge_web_dir = os.path.dirname(self.admin_dir)
         # GitHub Pages repo root (parent of ForgeWeb/)
+        
+        # Initialize Jinja2 template environment
+        template_dir = os.path.join(self.admin_dir, 'templates')
+        self.jinja_env = Environment(
+            loader=FileSystemLoader(template_dir),
+            autoescape=True,
+            trim_blocks=True,
+            lstrip_blocks=True
+        )
         repo_root = os.path.dirname(forge_web_dir)
         # Website files go in website/ subdirectory of the repo
         self.website_root = os.path.join(repo_root, 'website')
@@ -116,6 +126,49 @@ Thumbs.db
             print(f"✓ Created .gitignore in repository root")
             print(f"  └─ ForgeWeb/ and admin files will not be committed")
     
+    def load_branding_config(self):
+        """Load branding configuration from site-config.json and branding-config.json"""
+        branding = {
+            'primaryColor': '#1b5fa3',
+            'secondaryColor': '#144a84',
+            'accentColor': '#f9943b',
+            'darkColor': '#1F2937',
+            'lightColor': '#F3F4F6',
+            'font': 'Inter'
+        }
+        
+        # Load from site-config.json
+        site_config_path = os.path.join(self.admin_dir, 'site-config.json')
+        if os.path.exists(site_config_path):
+            try:
+                with open(site_config_path, 'r', encoding='utf-8') as f:
+                    site_config = json.load(f)
+                    if 'branding' in site_config:
+                        branding.update(site_config['branding'])
+            except Exception as e:
+                print(f"Warning: Could not load site-config.json: {e}")
+        
+        # Load from branding-config.json (takes precedence)
+        branding_config_path = os.path.join(self.admin_dir, 'branding-config.json')
+        if os.path.exists(branding_config_path):
+            try:
+                with open(branding_config_path, 'r', encoding='utf-8') as f:
+                    branding_config = json.load(f)
+                    if 'colors' in branding_config:
+                        colors = branding_config['colors']
+                        if 'primary' in colors:
+                            branding['primaryColor'] = colors['primary']
+                        if 'secondary' in colors:
+                            branding['secondaryColor'] = colors['secondary']
+                    if 'typography' in branding_config:
+                        typography = branding_config['typography']
+                        if 'headingFont' in typography:
+                            branding['font'] = typography['headingFont']
+            except Exception as e:
+                print(f"Warning: Could not load branding-config.json: {e}")
+        
+        return branding
+    
     def get_config_value(self, key, default=None):
         """Get configuration value from environment or config file"""
         # First check environment variables
@@ -170,27 +223,113 @@ Thumbs.db
             self.handle_design_system()
         elif self.path == '/api/branding':
             self.handle_branding_request()
+        elif self.path == '/api/social-accounts':
+            self.handle_social_accounts()
+        elif self.path == '/api/settings':
+            self.handle_settings()
         elif self.path == '/api/import-html':
             self.handle_html_import()
+        elif self.path == '/api/navigation':
+            self.handle_navigation_add()
+        elif self.path.startswith('/api/navigation/'):
+            self.handle_navigation_update()
         elif self.path.startswith('/api/'):
             self.handle_api_request()
         else:
             self.send_error(404, "API endpoint not found")
+    
+    def do_PUT(self):
+        """Handle PUT requests for updates"""
+        if self.path.startswith('/api/navigation/'):
+            self.handle_navigation_update()
+        else:
+            self.send_error(404, "API endpoint not found")
+    
+    def do_DELETE(self):
+        """Handle DELETE requests"""
+        if self.path.startswith('/api/navigation/'):
+            self.handle_navigation_delete()
+        else:
+            self.send_error(404, "API endpoint not found")
 
+    def render_template(self, template_name, **context):
+        """Render a Jinja2 template with context"""
+        try:
+            template = self.jinja_env.get_template(template_name)
+            html = template.render(**context)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Cache-Control', 'no-store')
+            self.end_headers()
+            self.wfile.write(html.encode('utf-8'))
+            return True
+        except TemplateNotFound:
+            self.send_error(404, f"Template not found: {template_name}")
+            return False
+        except Exception as e:
+            self.send_error(500, f"Template error: {str(e)}")
+            return False
+    
     def serve_admin_file(self, path):
-        """Serve admin interface files"""
+        """Serve admin interface files with template support"""
         # Remove /admin/ prefix
         file_path = path[7:] if path.startswith('/admin/') else path
         
         if not file_path or file_path == '/':
             file_path = 'index.html'
         
+        # Map URLs to template files - ALL admin pages use templates now
+        template_pages = {
+            'index.html': 'dashboard.html',
+            'site-setup.html': 'site-setup.html',
+            'design-chooser.html': 'design-chooser.html',
+            'branding-manager.html': 'branding-manager.html',
+            'navigation-manager.html': 'navigation-manager.html',
+            'page-editor.html': 'page-editor.html',
+            'editor.html': 'editor.html',
+            'articles-manager.html': 'articles-manager.html',
+            'html-import.html': 'html-import.html',
+            'settings.html': 'settings.html',
+            'social.html': 'social.html'
+        }
+        
+        if file_path in template_pages:
+            # Use template rendering
+            context = self.get_template_context()
+            context['current_page'] = file_path.replace('.html', '')
+            
+            if self.render_template(template_pages[file_path], **context):
+                return
+        
+        # Fall back to serving static files (CSS, JS, images, etc.)
         full_path = os.path.join(self.admin_dir, file_path)
         
         if os.path.exists(full_path) and os.path.isfile(full_path):
             self.serve_file(full_path)
         else:
             self.send_error(404, f"Admin file not found: {file_path}")
+    
+    def get_template_context(self):
+        """Get common context for all templates"""
+        context = {
+            'site_name': 'ForgeWeb',
+            'version': '2.0',
+            'current_year': datetime.now().year
+        }
+        
+        # Add site config if available
+        if db:
+            # Load common site settings
+            site_name = db.get_site_config('site_name')
+            if site_name:
+                context['site_name'] = site_name
+            
+            site_url = db.get_site_config('site_url')
+            if site_url:
+                context['site_url'] = site_url
+        
+        return context
 
     def serve_site_file(self, path):
         """Serve generated site files"""
@@ -372,7 +511,15 @@ Thumbs.db
     def handle_api_get_request(self):
         """Handle GET API requests"""
         try:
-            if self.path == '/api/branding':
+            if self.path == '/api/navigation':
+                # Get all navigation items
+                if not db:
+                    self.send_json_error(500, 'Database not available')
+                    return
+                
+                nav_items = db.get_navigation_items(active_only=False)
+                self.send_json_response({'navigation': nav_items})
+            elif self.path == '/api/branding':
                 branding_config = self.load_branding_config()
                 self.send_json_response(branding_config)
             elif self.path == '/api/design-system':
@@ -456,6 +603,36 @@ Thumbs.db
                                 })
                 
                 self.send_json_response({'files': files})
+            elif self.path == '/api/site-config' or self.path == '/api/site-setup-data':
+                # Load site configuration from database only
+                site_config = {}
+                
+                if db:
+                    # Load from database
+                    site_data = db.get_site_config('site')
+                    github_data = db.get_site_config('github')
+                    content_data = db.get_site_config('content')
+                    
+                    if site_data:
+                        site_config['site'] = site_data
+                    if github_data:
+                        site_config['github'] = github_data
+                    if content_data:
+                        site_config['content'] = content_data
+                
+                # Return config (empty if nothing in database)
+                self.send_json_response({'config': site_config})
+            
+            elif self.path == '/api/social-accounts':
+                # Return social media accounts configuration
+                social_config = self.load_social_accounts()
+                self.send_json_response(social_config)
+            
+            elif self.path == '/api/settings':
+                # Return app settings
+                settings = self.load_settings()
+                self.send_json_response(settings)
+            
             else:
                 endpoint = self.path.replace('/api/', '')
                 self.send_json_error(404, f"API endpoint not found: {endpoint}")
@@ -502,7 +679,7 @@ Thumbs.db
             },
             'github': {
                 'username': site_data.get('githubUsername', ''),
-                'repository': site_data.get('githubRepo', ''),
+                'repo': site_data.get('githubRepo', ''),  # Changed from 'repository' to 'repo'
                 'pages_enabled': True
             },
             'content': {
@@ -516,6 +693,13 @@ Thumbs.db
             }
         })
         
+        # Also save to database if available
+        if db:
+            db.set_site_config('site', config['site'])
+            db.set_site_config('github', config['github'])
+            db.set_site_config('content', config['content'])
+            print("✓ Site configuration saved to database")
+        
         # Save updated config
         with open(config_path, 'w') as f:
             json.dump(config, f, indent=2)
@@ -526,7 +710,7 @@ Thumbs.db
         """Generate site files based on configuration"""
         try:
             # Load templates
-            template_dir = os.path.join(self.website_root, 'templates')
+            template_dir = os.path.join(os.path.dirname(self.admin_dir), 'templates')
             base_template_path = os.path.join(template_dir, 'base.html')
             
             if not os.path.exists(base_template_path):
@@ -534,6 +718,9 @@ Thumbs.db
             
             with open(base_template_path, 'r', encoding='utf-8') as f:
                 base_template = f.read()
+            
+            # Initialize static assets (CSS/JS) - THIS IS KEY!
+            self.initialize_static_assets()
             
             # Generate pages based on configuration
             pages_generated = []
@@ -557,10 +744,15 @@ Thumbs.db
                 self.write_page('contact.html', contact_page)
                 pages_generated.append('contact.html')
             
+            # Create navigation items in database based on selected pages
+            if db:
+                self.create_navigation_from_site_config(site_data)
+            
             return {
                 'success': True, 
-                'message': f'Generated {len(pages_generated)} pages',
-                'pages': pages_generated
+                'message': f'Generated {len(pages_generated)} pages with shared CSS/JS',
+                'pages': pages_generated,
+                'note': 'Static assets (CSS/JS) created - update branding to affect all pages'
             }
             
         except Exception as e:
@@ -576,10 +768,43 @@ Thumbs.db
 
     def generate_page(self, base_template, title, content, site_data):
         """Generate a complete page from template and content"""
-        page = base_template.replace('{{TITLE}}', title)
-        page = page.replace('{{SITE_NAME}}', site_data.get('siteName', 'My Website'))
-        page = page.replace('{{CONTENT}}', content)
-        page = page.replace('{{DESCRIPTION}}', site_data.get('siteDescription', 'A website built with ForgeWeb'))
+        # Load branding configuration
+        branding = self.load_branding_config()
+        
+        # Replace all template variables
+        replacements = {
+            '{{TITLE}}': title,
+            '{{SITE_TITLE}}': title,
+            '{{SITE_NAME}}': site_data.get('siteName', 'My Website'),
+            '{{CONTENT}}': content,
+            '{{DESCRIPTION}}': site_data.get('siteDescription', 'A website built with ForgeWeb'),
+            '{{SITE_DESCRIPTION}}': site_data.get('siteDescription', 'A website built with ForgeWeb'),
+            '{{SITE_AUTHOR}}': site_data.get('siteAuthor', 'Website Owner'),
+            '{{SITE_URL}}': site_data.get('siteUrl', 'https://example.com'),
+            '{{BRAND_PRIMARY_COLOR}}': branding.get('primaryColor', '#1b5fa3'),
+            '{{BRAND_SECONDARY_COLOR}}': branding.get('secondaryColor', '#144a84'),
+            '{{BRAND_ACCENT_COLOR}}': branding.get('accentColor', '#f9943b'),
+            '{{BRAND_FONT}}': branding.get('font', 'Inter'),
+            '{{TAILWIND_CDN_URL}}': 'https://cdn.tailwindcss.com',
+            '{{CUSTOM_CSS_PATH}}': 'assets/css/custom.css',
+            '{{NAV_LINKS}}': self.generate_nav_links(site_data),
+            '{{MOBILE_NAV_LINKS}}': self.generate_nav_links(site_data),
+            '{{CURRENT_YEAR}}': str(datetime.now().year)
+        }
+        
+        page = base_template
+        for placeholder, value in replacements.items():
+            page = page.replace(placeholder, value)
+        
+        # Handle conditional blocks {{#LOGO_PATH}}...{{/LOGO_PATH}}
+        import re
+        logo_path = site_data.get('logoPath', '')
+        if logo_path:
+            page = page.replace('{{#LOGO_PATH}}', '').replace('{{/LOGO_PATH}}', '')
+            page = page.replace('{{LOGO_PATH}}', logo_path)
+        else:
+            page = re.sub(r'\{\{#LOGO_PATH\}\}.*?\{\{/LOGO_PATH\}\}', '', page, flags=re.DOTALL)
+        
         return page
 
     def write_page(self, filename, content):
@@ -653,6 +878,9 @@ Thumbs.db
             # Fallback basic template
             template_content = self.get_fallback_template()
         
+        # Load branding configuration
+        branding = self.load_branding_config()
+        
         # Prepare template variables
         template_vars = {
             'SITE_TITLE': title,
@@ -666,9 +894,10 @@ Thumbs.db
             'LOGO_PATH': self.get_config_value('LOGO_PATH', 'assets/images/logo.png'),
             'TAILWIND_CDN_URL': self.get_config_value('TAILWIND_CDN_URL', 'https://cdn.tailwindcss.com'),
             'CUSTOM_CSS_PATH': self.get_config_value('CUSTOM_CSS_PATH', 'assets/css/custom.css'),
-            'BRAND_PRIMARY_COLOR': self.get_config_value('BRAND_PRIMARY_COLOR', '#1b5fa3'),
-            'BRAND_SECONDARY_COLOR': self.get_config_value('BRAND_SECONDARY_COLOR', '#144a84'),
-            'BRAND_ACCENT_COLOR': self.get_config_value('BRAND_ACCENT_COLOR', '#f9943b'),
+            'BRAND_PRIMARY_COLOR': branding.get('primaryColor', '#1b5fa3'),
+            'BRAND_SECONDARY_COLOR': branding.get('secondaryColor', '#144a84'),
+            'BRAND_ACCENT_COLOR': branding.get('accentColor', '#f9943b'),
+            'BRAND_FONT': branding.get('font', 'Inter'),
             'FAVICON_PATH': '/favicon.ico'
         }
         
@@ -885,37 +1114,279 @@ Sitemap: {site_url}/sitemap.xml"""
             return {'error': str(e)}
 
     def save_branding_config(self, branding_data):
-        """Save branding configuration"""
+        """Save branding configuration and update static assets"""
         try:
             branding_path = os.path.join(self.admin_dir, 'branding-config.json')
             
-            # Save branding configuration
-            with open(branding_path, 'w') as f:
+            # Save branding configuration to JSON file
+            with open(branding_path, 'w', encoding='utf-8') as f:
                 json.dump(branding_data, f, indent=2)
             
-            # Update custom CSS file if provided
-            if 'customCSS' in branding_data and branding_data['customCSS']:
-                css_path = os.path.join(self.website_root, 'assets', 'css', 'custom.css')
+            # Also update site-config.json branding section
+            site_config_path = os.path.join(self.admin_dir, 'site-config.json')
+            if os.path.exists(site_config_path):
+                with open(site_config_path, 'r', encoding='utf-8') as f:
+                    site_config = json.load(f)
                 
-                # Ensure directory exists
-                os.makedirs(os.path.dirname(css_path), exist_ok=True)
+                # Update branding section
+                site_config['branding'] = self.convert_branding_format(branding_data)
                 
-                # Update CSS variables with new colors
-                css_content = self.generate_custom_css(branding_data)
-                with open(css_path, 'w') as f:
-                    f.write(css_content)
+                with open(site_config_path, 'w', encoding='utf-8') as f:
+                    json.dump(site_config, f, indent=2)
             
-            # Update environment variables if needed
-            self.update_env_variables(branding_data)
+            # Save to database if available
+            if db:
+                db.set_site_config('branding', branding_data)
+                print("✓ Branding saved to database")
+            
+            # UPDATE STATIC ASSETS - This is the key part!
+            self.update_static_assets(branding_data)
             
             return {
                 'success': True,
-                'message': 'Branding configuration saved successfully'
+                'message': 'Branding updated! All pages will now use the new branding.',
+                'note': 'CSS and JS files updated - changes apply to all pages'
             }
             
         except Exception as e:
             print(f"Error saving branding config: {e}")
             return {'success': False, 'error': str(e)}
+    
+    def convert_branding_format(self, branding_data):
+        """Convert branding-config.json format to site-config.json format"""
+        colors = branding_data.get('colors', {})
+        typography = branding_data.get('typography', {})
+        
+        return {
+            'primaryColor': colors.get('primary', '#1b5fa3'),
+            'secondaryColor': colors.get('secondary', '#144a84'),
+            'accentColor': colors.get('accent', '#f9943b'),
+            'darkColor': colors.get('dark', '#1F2937'),
+            'lightColor': colors.get('light', '#F3F4F6'),
+            'font': typography.get('headingFont', 'Inter')
+        }
+    
+    def update_static_assets(self, branding_data):
+        """Update CSS and JS files in website/assets with new branding"""
+        # Ensure assets directories exist
+        css_dir = os.path.join(self.website_root, 'assets', 'css')
+        js_dir = os.path.join(self.website_root, 'assets', 'js')
+        os.makedirs(css_dir, exist_ok=True)
+        os.makedirs(js_dir, exist_ok=True)
+        
+        # Update custom.css with new branding
+        css_content = self.generate_custom_css(branding_data)
+        css_path = os.path.join(css_dir, 'custom.css')
+        with open(css_path, 'w', encoding='utf-8') as f:
+            f.write(css_content)
+        print(f"✓ Updated {css_path}")
+        
+        # Copy site.js (navigation and utilities)
+        source_js = os.path.join(os.path.dirname(self.admin_dir), 'assets', 'js', 'site.js')
+        if os.path.exists(source_js):
+            dest_js = os.path.join(js_dir, 'site.js')
+            shutil.copy2(source_js, dest_js)
+            print(f"✓ Copied {dest_js}")
+        
+        # Update site-config.js with navigation and social data
+        self.generate_site_config_js()
+        
+        return True
+    
+    
+    def build_navigation_from_config(self, site_config):
+        """Build navigation array from site-config.json"""
+        navigation = []
+        navigation.append({'title': 'Home', 'url': 'index.html'})
+        
+        content_config = site_config.get('content', {})
+        if content_config.get('include_about'):
+            navigation.append({'title': 'About', 'url': 'about.html'})
+        if content_config.get('include_services'):
+            navigation.append({'title': 'Services', 'url': 'services.html'})
+        if content_config.get('include_portfolio'):
+            navigation.append({'title': 'Portfolio', 'url': 'portfolio.html'})
+        if content_config.get('include_blog'):
+            navigation.append({'title': 'Blog', 'url': 'blog.html'})
+        if content_config.get('include_contact'):
+            navigation.append({'title': 'Contact', 'url': 'contact.html'})
+        
+        return navigation
+    
+    def generate_site_config_js(self):
+        """Generate site-config.js with navigation and social media data"""
+        try:
+            # Load site configuration
+            site_config_path = os.path.join(self.admin_dir, 'site-config.json')
+            if not os.path.exists(site_config_path):
+                return
+            
+            with open(site_config_path, 'r', encoding='utf-8') as f:
+                site_config = json.load(f)
+            
+            # Build navigation array - try database first
+            navigation = []
+            if db:
+                db_nav_items = db.get_navigation_items(active_only=True)
+                if db_nav_items:
+                    # Use database navigation
+                    for item in db_nav_items:
+                        nav_item = {
+                            'title': item['title'],
+                            'url': item['url']
+                        }
+                        if item.get('open_new_tab'):
+                            nav_item['target'] = '_blank'
+                        if item.get('css_class'):
+                            nav_item['class'] = item['css_class']
+                        navigation.append(nav_item)
+                else:
+                    # Fall back to config-based navigation
+                    navigation = self.build_navigation_from_config(site_config)
+            else:
+                # No database, use config
+                navigation = self.build_navigation_from_config(site_config)
+            
+            # Get social media configuration
+            social_config = site_config.get('social', {})
+            social = {
+                'twitter': social_config.get('platforms', {}).get('twitter', {}).get('handle', ''),
+                'linkedin': social_config.get('platforms', {}).get('linkedin', {}).get('handle', ''),
+                'facebook': social_config.get('platforms', {}).get('facebook', {}).get('handle', ''),
+                'github': social_config.get('platforms', {}).get('github', {}).get('handle', '')
+            }
+            
+            # Generate JavaScript file
+            js_content = f"""/**
+ * Site Configuration
+ * Auto-generated from site-config.json
+ * This file is loaded by all pages to provide navigation and social media links
+ */
+
+const SITE_CONFIG = {{
+    siteName: {json.dumps(site_config.get('site', {}).get('name', 'My Website'))},
+    siteUrl: {json.dumps(site_config.get('site', {}).get('url', ''))},
+    description: {json.dumps(site_config.get('site', {}).get('description', ''))},
+    navigation: {json.dumps(navigation, indent=4)},
+    social: {json.dumps(social, indent=4)},
+    currentYear: new Date().getFullYear()
+}};
+
+/**
+ * Initialize navigation on page load
+ */
+function initNavigation() {{
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    
+    // Update active state in navigation
+    SITE_CONFIG.navigation.forEach(item => {{
+        item.active = item.url === currentPage;
+    }});
+}}
+
+/**
+ * Toggle mobile menu
+ */
+function toggleMobileMenu() {{
+    const menu = document.getElementById('mobile-menu');
+    if (menu) {{
+        menu.classList.toggle('hidden');
+    }}
+}}
+
+/**
+ * Initialize page
+ */
+document.addEventListener('DOMContentLoaded', () => {{
+    initNavigation();
+    
+    // Update copyright year if element exists
+    const yearElement = document.getElementById('current-year');
+    if (yearElement) {{
+        yearElement.textContent = SITE_CONFIG.currentYear;
+    }}
+}});
+"""
+            
+            # Save to website/assets/js/
+            js_dir = os.path.join(self.website_root, 'assets', 'js')
+            os.makedirs(js_dir, exist_ok=True)
+            js_path = os.path.join(js_dir, 'site-config.js')
+            
+            with open(js_path, 'w', encoding='utf-8') as f:
+                f.write(js_content)
+            
+            print(f"✓ Generated {js_path}")
+            return True
+            
+        except Exception as e:
+            print(f"Error generating site-config.js: {e}")
+            return False
+    
+    def initialize_static_assets(self):
+        """Initialize static CSS and JS files for the website"""
+        try:
+            # Load current branding
+            branding = self.load_branding_config()
+            
+            # Create assets directories
+            css_dir = os.path.join(self.website_root, 'assets', 'css')
+            js_dir = os.path.join(self.website_root, 'assets', 'js')
+            img_dir = os.path.join(self.website_root, 'assets', 'images')
+            os.makedirs(css_dir, exist_ok=True)
+            os.makedirs(js_dir, exist_ok=True)
+            os.makedirs(img_dir, exist_ok=True)
+            
+            # Generate custom.css with current branding
+            css_content = self.generate_custom_css({
+                'colors': {
+                    'primary': branding.get('primaryColor', '#1b5fa3'),
+                    'secondary': branding.get('secondaryColor', '#144a84'),
+                    'accent': branding.get('accentColor', '#f9943b')
+                },
+                'typography': {
+                    'fontFamily': 'system',
+                    'borderRadius': 'md'
+                },
+                'customCSS': ''
+            })
+            
+            css_path = os.path.join(css_dir, 'custom.css')
+            with open(css_path, 'w', encoding='utf-8') as f:
+                f.write(css_content)
+            print(f"✓ Created {css_path}")
+            
+            # Copy or create site.js
+            source_js = os.path.join(os.path.dirname(self.admin_dir), 'assets', 'js', 'site.js')
+            dest_js = os.path.join(js_dir, 'site.js')
+            if os.path.exists(source_js):
+                shutil.copy2(source_js, dest_js)
+                print(f"✓ Copied {dest_js}")
+            else:
+                # Create basic site.js if source doesn't exist
+                basic_js = """// Site utilities
+function toggleMobileMenu() {
+    const menu = document.getElementById('mobile-menu');
+    if (menu) menu.classList.toggle('hidden');
+}
+document.addEventListener('DOMContentLoaded', () => {
+    const yearEl = document.getElementById('current-year');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
+});
+"""
+                with open(dest_js, 'w', encoding='utf-8') as f:
+                    f.write(basic_js)
+                print(f"✓ Created {dest_js}")
+            
+            # Generate site-config.js with navigation
+            self.generate_site_config_js()
+            
+            print("✓ Static assets initialized")
+            return True
+            
+        except Exception as e:
+            print(f"Error initializing static assets: {e}")
+            return False
 
     def generate_custom_css(self, branding_data):
         """Generate custom CSS with branding variables"""
@@ -1048,6 +1519,260 @@ body { font-family: 'Montserrat', system-ui, sans-serif; }"""
                 os.environ['BRAND_ACCENT_COLOR'] = colors['accent']
         except Exception as e:
             print(f"Warning: Could not update environment variables: {e}")
+    
+    # Navigation API handlers
+    def handle_navigation_add(self):
+        """Handle POST /api/navigation - Add new navigation item"""
+        try:
+            if not db:
+                self.send_json_error(500, 'Database not available')
+                return
+            
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            # Extract parameters
+            title = data.get('title', '').strip()
+            url = data.get('url', '').strip()
+            position = data.get('position', 0)
+            parent_id = data.get('parent_id')
+            is_active = data.get('is_active', True)
+            open_new_tab = data.get('open_new_tab', False)
+            css_class = data.get('css_class', '')
+            
+            # Validate required fields
+            if not title or not url:
+                self.send_json_error(400, 'Title and URL are required')
+                return
+            
+            # Add to database
+            nav_id = db.add_navigation_item(
+                title=title,
+                url=url,
+                position=position,
+                parent_id=parent_id,
+                is_active=is_active,
+                open_new_tab=open_new_tab,
+                css_class=css_class
+            )
+            
+            # Regenerate site-config.js
+            self.generate_site_config_js()
+            
+            self.send_json_response({
+                'success': True,
+                'id': nav_id,
+                'message': 'Navigation item added successfully'
+            })
+            
+        except Exception as e:
+            print(f"Error adding navigation item: {e}")
+            self.send_json_error(500, str(e))
+    
+    def handle_navigation_update(self):
+        """Handle PUT/POST /api/navigation/:id - Update navigation item"""
+        try:
+            if not db:
+                self.send_json_error(500, 'Database not available')
+                return
+            
+            # Extract ID from path
+            nav_id = self.path.split('/')[-1]
+            try:
+                nav_id = int(nav_id)
+            except ValueError:
+                self.send_json_error(400, 'Invalid navigation ID')
+                return
+            
+            # Read request body
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            # Update in database (only provided fields)
+            success = db.update_navigation_item(
+                nav_id=nav_id,
+                title=data.get('title'),
+                url=data.get('url'),
+                position=data.get('position'),
+                parent_id=data.get('parent_id'),
+                is_active=data.get('is_active'),
+                open_new_tab=data.get('open_new_tab'),
+                css_class=data.get('css_class')
+            )
+            
+            if not success:
+                self.send_json_error(404, 'Navigation item not found')
+                return
+            
+            # Regenerate site-config.js
+            self.generate_site_config_js()
+            
+            self.send_json_response({
+                'success': True,
+                'message': 'Navigation item updated successfully'
+            })
+            
+        except Exception as e:
+            print(f"Error updating navigation item: {e}")
+            self.send_json_error(500, str(e))
+    
+    def handle_navigation_delete(self):
+        """Handle DELETE /api/navigation/:id - Delete navigation item"""
+        try:
+            if not db:
+                self.send_json_error(500, 'Database not available')
+                return
+            
+            # Extract ID from path
+            nav_id = self.path.split('/')[-1]
+            try:
+                nav_id = int(nav_id)
+            except ValueError:
+                self.send_json_error(400, 'Invalid navigation ID')
+                return
+            
+            # Delete from database
+            success = db.delete_navigation_item(nav_id)
+            
+            if not success:
+                self.send_json_error(404, 'Navigation item not found')
+                return
+            
+            # Regenerate site-config.js
+            self.generate_site_config_js()
+            
+            self.send_json_response({
+                'success': True,
+                'message': 'Navigation item deleted successfully'
+            })
+            
+        except Exception as e:
+            print(f"Error deleting navigation item: {e}")
+            self.send_json_error(500, str(e))
+
+
+    def handle_social_accounts(self):
+        """Handle social media accounts save/update"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            accounts_data = json.loads(post_data.decode('utf-8'))
+            
+            # Save to site-config.json
+            site_config_path = os.path.join(self.admin_dir, 'site-config.json')
+            site_config = {}
+            if os.path.exists(site_config_path):
+                with open(site_config_path, 'r') as f:
+                    site_config = json.load(f)
+            
+            site_config['social'] = accounts_data
+            
+            with open(site_config_path, 'w') as f:
+                json.dump(site_config, f, indent=2)
+            
+            # Also save to database if available
+            if db:
+                db.set_site_config('social', accounts_data)
+            
+            self.send_json_response({
+                'success': True,
+                'message': 'Social media accounts saved successfully'
+            })
+            
+        except Exception as e:
+            print(f"Error saving social accounts: {e}")
+            self.send_json_error(500, str(e))
+    
+    def handle_settings(self):
+        """Handle app settings save/update"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            settings_data = json.loads(post_data.decode('utf-8'))
+            
+            # Save to site-config.json
+            site_config_path = os.path.join(self.admin_dir, 'site-config.json')
+            site_config = {}
+            if os.path.exists(site_config_path):
+                with open(site_config_path, 'r') as f:
+                    site_config = json.load(f)
+            
+            # Merge settings into config
+            site_config['settings'] = settings_data
+            
+            with open(site_config_path, 'w') as f:
+                json.dump(site_config, f, indent=2)
+            
+            # Also save to database if available
+            if db:
+                # Save each setting category to database
+                for category, values in settings_data.items():
+                    for key, value in values.items():
+                        db.set_setting(category, key, value)
+            
+            self.send_json_response({
+                'success': True,
+                'message': 'Settings saved successfully'
+            })
+            
+        except Exception as e:
+            print(f"Error saving settings: {e}")
+            self.send_json_error(500, str(e))
+    
+    def load_social_accounts(self):
+        """Load social media accounts from config"""
+        try:
+            # Try database first
+            if db:
+                social_data = db.get_site_config('social')
+                if social_data:
+                    return social_data
+            
+            # Fallback to file
+            site_config_path = os.path.join(self.admin_dir, 'site-config.json')
+            if os.path.exists(site_config_path):
+                with open(site_config_path, 'r') as f:
+                    site_config = json.load(f)
+                    return site_config.get('social', {})
+            
+            # Return empty structure
+            return {
+                'linkedin': {'company': '', 'personal': '', 'template': ''},
+                'bluesky': {'handle': '', 'display': '', 'template': ''},
+                'mastodon': {'instance': '', 'username': '', 'template': ''}
+            }
+        except Exception as e:
+            print(f"Error loading social accounts: {e}")
+            return {}
+    
+    def load_settings(self):
+        """Load app settings from database or config file"""
+        try:
+            settings = {}
+            
+            # Try database first
+            if db:
+                # Load settings by category
+                for category in ['aiProviders', 'content', 'social']:
+                    category_settings = db.get_site_config(f'settings_{category}')
+                    if category_settings:
+                        settings[category] = category_settings
+            
+            # Fallback to file
+            if not settings:
+                site_config_path = os.path.join(self.admin_dir, 'site-config.json')
+                if os.path.exists(site_config_path):
+                    with open(site_config_path, 'r') as f:
+                        site_config = json.load(f)
+                        settings = site_config.get('settings', {})
+            
+            return settings
+        except Exception as e:
+            print(f"Error loading settings: {e}")
+            return {}
 
     def handle_html_import(self):
         """Handle HTML import requests"""

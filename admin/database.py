@@ -114,6 +114,52 @@ class ForgeWebDB:
             )
         ''')
         
+        # Navigation items
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS navigation (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                url TEXT NOT NULL,
+                position INTEGER DEFAULT 0,
+                parent_id INTEGER,
+                is_active BOOLEAN DEFAULT 1,
+                open_new_tab BOOLEAN DEFAULT 0,
+                css_class TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (parent_id) REFERENCES navigation(id) ON DELETE CASCADE
+            )
+        ''')
+        
+        # Branding configuration
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS branding (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                primary_color TEXT DEFAULT '#1b5fa3',
+                secondary_color TEXT DEFAULT '#144a84',
+                accent_color TEXT DEFAULT '#f9943b',
+                dark_color TEXT DEFAULT '#1F2937',
+                light_color TEXT DEFAULT '#F3F4F6',
+                font_family TEXT DEFAULT 'Inter',
+                logo_path TEXT,
+                favicon_path TEXT,
+                custom_css TEXT,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Social media configuration
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS social_media (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                platform TEXT NOT NULL UNIQUE,
+                handle TEXT,
+                url TEXT,
+                enabled BOOLEAN DEFAULT 1,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
         self.conn.commit()
         print("✓ Database initialized")
     
@@ -290,6 +336,104 @@ class ForgeWebDB:
                 branding = json.load(f)
             self.set_site_config('branding', branding)
             print("✓ Migrated branding-config.json to database")
+    
+    
+    # Navigation methods
+    def get_navigation_items(self, active_only=True):
+        """Get all navigation items"""
+        cursor = self.conn.cursor()
+        query = 'SELECT * FROM navigation'
+        if active_only:
+            query += ' WHERE is_active = 1'
+        query += ' ORDER BY position ASC, id ASC'
+        
+        cursor.execute(query)
+        items = []
+        for row in cursor.fetchall():
+            items.append({
+                'id': row['id'],
+                'title': row['title'],
+                'url': row['url'],
+                'position': row['position'],
+                'parent_id': row['parent_id'],
+                'is_active': bool(row['is_active']),
+                'open_new_tab': bool(row['open_new_tab']),
+                'css_class': row['css_class'],
+                'created_at': row['created_at'],
+                'updated_at': row['updated_at']
+            })
+        return items
+    
+    def add_navigation_item(self, title, url, position=0, parent_id=None, 
+                           is_active=True, open_new_tab=False, css_class=''):
+        """Add a navigation item"""
+        cursor = self.conn.cursor()
+        cursor.execute('''
+            INSERT INTO navigation 
+            (title, url, position, parent_id, is_active, open_new_tab, css_class)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (title, url, position, parent_id, int(is_active), int(open_new_tab), css_class))
+        self.conn.commit()
+        return cursor.lastrowid
+    
+    def update_navigation_item(self, nav_id, title=None, url=None, position=None, 
+                               parent_id=None, is_active=None, open_new_tab=None, css_class=None):
+        """Update a navigation item"""
+        cursor = self.conn.cursor()
+        updates = []
+        values = []
+        
+        if title is not None:
+            updates.append('title = ?')
+            values.append(title)
+        if url is not None:
+            updates.append('url = ?')
+            values.append(url)
+        if position is not None:
+            updates.append('position = ?')
+            values.append(position)
+        if parent_id is not None:
+            updates.append('parent_id = ?')
+            values.append(parent_id)
+        if is_active is not None:
+            updates.append('is_active = ?')
+            values.append(int(is_active))
+        if open_new_tab is not None:
+            updates.append('open_new_tab = ?')
+            values.append(int(open_new_tab))
+        if css_class is not None:
+            updates.append('css_class = ?')
+            values.append(css_class)
+        
+        if updates:
+            updates.append('updated_at = CURRENT_TIMESTAMP')
+            values.append(nav_id)
+            query = f"UPDATE navigation SET {', '.join(updates)} WHERE id = ?"
+            cursor.execute(query, values)
+            self.conn.commit()
+            return cursor.rowcount > 0
+        return False
+    
+    def delete_navigation_item(self, nav_id):
+        """Delete a navigation item (and its children due to CASCADE)"""
+        cursor = self.conn.cursor()
+        cursor.execute('DELETE FROM navigation WHERE id = ?', (nav_id,))
+        self.conn.commit()
+        return cursor.rowcount > 0
+    
+    def reorder_navigation(self, order_list):
+        """
+        Reorder navigation items
+        order_list: list of tuples [(id, position), ...]
+        """
+        cursor = self.conn.cursor()
+        for nav_id, position in order_list:
+            cursor.execute('''
+                UPDATE navigation 
+                SET position = ?, updated_at = CURRENT_TIMESTAMP 
+                WHERE id = ?
+            ''', (position, nav_id))
+        self.conn.commit()
     
     def close(self):
         """Close database connection"""

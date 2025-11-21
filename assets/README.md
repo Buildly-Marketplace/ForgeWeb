@@ -1,5 +1,7 @@
 # ForgeWeb Assets
 
+> **📚 For technical documentation, see [../devdocs/](../devdocs/)**
+
 This directory contains the marketing and branding assets for ForgeWeb.
 
 ## Required Assets

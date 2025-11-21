@@ -78,7 +78,8 @@ if [ ! -d "venv" ]; then
     echo "  - requests (for API calls)"
     echo "  - python-dotenv (for configuration)"
     echo "  - pillow (for image processing)"
-    pip install requests python-dotenv pillow --quiet
+    echo "  - jinja2 (for template rendering)"
+    pip install requests python-dotenv pillow jinja2 --quiet
     echo -e "${GREEN}✓${NC} All packages installed"
     
     # Create necessary directories

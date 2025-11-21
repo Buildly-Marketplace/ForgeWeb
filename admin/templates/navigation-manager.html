@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+
+{% block title %}Navigation Manager - ForgeWeb Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+.draggable {
+    cursor: move;
+}
+.dragging {
+    opacity: 0.5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Navigation Manager</h1>
+    <p class="text-gray-600">Manage your website's navigation menu</p>
+</div>
+
+<!-- Add New Navigation Item -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">Add Navigation Item</h2>
+    <form id="add-nav-form" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                <input type="text" id="nav-title" required 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g. Home, About, Services">
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">URL *</label>
+                <input type="text" id="nav-url" required 
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g. index.html, /about, https://example.com">
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                <input type="number" id="nav-position" value="0" min="0"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <p class="text-xs text-gray-500 mt-1">Lower numbers appear first</p>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">CSS Class (optional)</label>
+                <input type="text" id="nav-css-class"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="e.g. btn-primary">
+            </div>
+            
+            <div class="flex items-end gap-4">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="nav-new-tab" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500">
+                    <span class="ml-2 text-sm text-gray-700">Open in new tab</span>
+                </label>
+            </div>
+        </div>
+        
+        <div class="flex justify-end">
+            <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Add Navigation Item
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- Navigation Items List -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-900">Navigation Items</h2>
+        <button onclick="loadNavigation()" class="text-blue-600 hover:text-blue-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            </svg>
+        </button>
+    </div>
+    
+    <div id="nav-items-container">
+        <div class="text-center py-8 text-gray-500">
+            <p>Loading navigation items...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-semibold text-gray-900">Edit Navigation Item</h3>
+                <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <form id="edit-nav-form" class="space-y-4">
+                <input type="hidden" id="edit-nav-id">
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Title *</label>
+                    <input type="text" id="edit-nav-title" required 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">URL *</label>
+                    <input type="text" id="edit-nav-url" required 
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                    <input type="number" id="edit-nav-position" min="0"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">CSS Class</label>
+                    <input type="text" id="edit-nav-css-class"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="edit-nav-new-tab" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Open in new tab</span>
+                    </label>
+                    
+                    <label class="flex items-center cursor-pointer">
+                        <input type="checkbox" id="edit-nav-active" class="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500">
+                        <span class="ml-2 text-sm text-gray-700">Active</span>
+                    </label>
+                </div>
+                
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="closeEditModal()" 
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button type="submit" 
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+let navigationItems = [];
+
+// Load navigation items on page load
+document.addEventListener('DOMContentLoaded', () => {
+    loadNavigation();
+    
+    // Add navigation form handler
+    document.getElementById('add-nav-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await addNavigationItem();
+    });
+    
+    // Edit navigation form handler
+    document.getElementById('edit-nav-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await updateNavigationItem();
+    });
+});
+
+async function loadNavigation() {
+    try {
+        const response = await fetch('/api/navigation');
+        const data = await response.json();
+        
+        if (data.navigation) {
+            navigationItems = data.navigation;
+            renderNavigationItems();
+        }
+    } catch (error) {
+        console.error('Error loading navigation:', error);
+        showNotification('Failed to load navigation items', 'error');
+    }
+}
+
+function renderNavigationItems() {
+    const container = document.getElementById('nav-items-container');
+    
+    if (navigationItems.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8 text-gray-500">
+                <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+                <p>No navigation items yet. Add your first one above!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="space-y-2">
+            ${navigationItems.map(item => `
+                <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors ${!item.is_active ? 'opacity-50' : ''}">
+                    <div class="flex items-center space-x-4 flex-1">
+                        <svg class="w-5 h-5 text-gray-400 draggable" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <div class="flex-1">
+                            <div class="flex items-center gap-2">
+                                <h3 class="font-semibold text-gray-900">${escapeHtml(item.title)}</h3>
+                                ${!item.is_active ? '<span class="text-xs px-2 py-1 bg-gray-200 text-gray-600 rounded">Inactive</span>' : ''}
+                                ${item.open_new_tab ? '<span class="text-xs px-2 py-1 bg-blue-100 text-blue-600 rounded">New Tab</span>' : ''}
+                            </div>
+                            <p class="text-sm text-gray-600">${escapeHtml(item.url)}</p>
+                            ${item.css_class ? `<p class="text-xs text-gray-500 mt-1">Class: ${escapeHtml(item.css_class)}</p>` : ''}
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            Position: ${item.position}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 ml-4">
+                        <button onclick="editNavigationItem(${item.id})" 
+                            class="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Edit">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                            </svg>
+                        </button>
+                        <button onclick="deleteNavigationItem(${item.id})" 
+                            class="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Delete">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+async function addNavigationItem() {
+    const title = document.getElementById('nav-title').value.trim();
+    const url = document.getElementById('nav-url').value.trim();
+    const position = parseInt(document.getElementById('nav-position').value) || 0;
+    const css_class = document.getElementById('nav-css-class').value.trim();
+    const open_new_tab = document.getElementById('nav-new-tab').checked;
+    
+    if (!title || !url) {
+        showNotification('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/navigation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title,
+                url,
+                position,
+                css_class,
+                open_new_tab,
+                is_active: true
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Navigation item added successfully!', 'success');
+            document.getElementById('add-nav-form').reset();
+            await loadNavigation();
+        } else {
+            showNotification(data.error || 'Failed to add navigation item', 'error');
+        }
+    } catch (error) {
+        console.error('Error adding navigation:', error);
+        showNotification('Failed to add navigation item', 'error');
+    }
+}
+
+function editNavigationItem(id) {
+    const item = navigationItems.find(i => i.id === id);
+    if (!item) return;
+    
+    document.getElementById('edit-nav-id').value = item.id;
+    document.getElementById('edit-nav-title').value = item.title;
+    document.getElementById('edit-nav-url').value = item.url;
+    document.getElementById('edit-nav-position').value = item.position;
+    document.getElementById('edit-nav-css-class').value = item.css_class || '';
+    document.getElementById('edit-nav-new-tab').checked = item.open_new_tab;
+    document.getElementById('edit-nav-active').checked = item.is_active;
+    
+    document.getElementById('edit-modal').classList.remove('hidden');
+}
+
+function closeEditModal() {
+    document.getElementById('edit-modal').classList.add('hidden');
+}
+
+async function updateNavigationItem() {
+    const id = document.getElementById('edit-nav-id').value;
+    const title = document.getElementById('edit-nav-title').value.trim();
+    const url = document.getElementById('edit-nav-url').value.trim();
+    const position = parseInt(document.getElementById('edit-nav-position').value) || 0;
+    const css_class = document.getElementById('edit-nav-css-class').value.trim();
+    const open_new_tab = document.getElementById('edit-nav-new-tab').checked;
+    const is_active = document.getElementById('edit-nav-active').checked;
+    
+    if (!title || !url) {
+        showNotification('Please fill in all required fields', 'error');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/navigation/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title,
+                url,
+                position,
+                css_class,
+                open_new_tab,
+                is_active
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Navigation item updated successfully!', 'success');
+            closeEditModal();
+            await loadNavigation();
+        } else {
+            showNotification(data.error || 'Failed to update navigation item', 'error');
+        }
+    } catch (error) {
+        console.error('Error updating navigation:', error);
+        showNotification('Failed to update navigation item', 'error');
+    }
+}
+
+async function deleteNavigationItem(id) {
+    const item = navigationItems.find(i => i.id === id);
+    if (!item) return;
+    
+    if (!confirm(`Are you sure you want to delete "${item.title}"?`)) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/navigation/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showNotification('Navigation item deleted successfully!', 'success');
+            await loadNavigation();
+        } else {
+            showNotification(data.error || 'Failed to delete navigation item', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting navigation:', error);
+        showNotification('Failed to delete navigation item', 'error');
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
+{% endblock %}
