@@ -1,11 +1,18 @@
 # ForgeWeb .gitignore
-# This file tells Git which files NOT to track or deploy to GitHub Pages
+# This file tells Git which files NOT to track in the ForgeWeb submodule
+
+# ==========================================
+# ARCHITECTURE NOTE
+# ==========================================
+# ForgeWeb is designed to be used as a Git submodule.
+# User website files (index.html, articles/, assets/) are saved to the PARENT directory,
+# NOT inside ForgeWeb. Only admin tools and templates are in this repository.
 
 # ==========================================
 # LOCAL DEVELOPMENT (Do not deploy these)
 # ==========================================
 
-# Database files (local admin database)
+# Database files (local admin database - stores site configuration)
 *.db
 *.sqlite
 *.sqlite3

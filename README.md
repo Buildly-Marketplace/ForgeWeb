@@ -1,12 +1,41 @@
 # ForgeWeb
 
-**AI-Powered Static Site Generator with Local Admin Interface**
+**AI-Powered Static Site Generator for GitHub Pages**
 
-ForgeWeb is a comprehensive static site management solution that combines the power of AI-assisted content creation with an intuitive local admin interface. Generate professional websites, manage articles and pages, and deploy seamlessly to GitHub Pages.
+ForgeWeb is a simple, powerful static site generator with a local admin interface. Build beautiful websites with AI assistance and deploy to GitHub Pages in minutes.
 
 ![ForgeWeb Logo](assets/forgeweb-logo-512.png)
 
-> **👉 New to ForgeWeb?** Check out [QUICKSTART.md](QUICKSTART.md) for a super simple 3-step setup guide!
+> **👉 Quick Setup:** See [SETUP-REPO.md](SETUP-REPO.md) for the complete setup guide!
+
+## 🏗️ Simple Architecture
+
+ForgeWeb uses a clean, folder-based structure:
+
+```
+your-github-repo/              ← Your GitHub Pages repository
+├── .gitignore                 ← Auto-generated (excludes ForgeWeb/)
+├── website/                   ← Your content (deployed to GitHub Pages) ✅
+│   ├── index.html
+│   ├── articles/
+│   └── assets/
+└── ForgeWeb/                  ← Admin tools (NOT deployed) ❌
+    ├── admin/
+    └── start.sh
+```
+
+**How it works:**
+1. Clone ForgeWeb, move it into your GitHub Pages repo
+2. ForgeWeb creates a `website/` folder for your content
+3. `.gitignore` excludes ForgeWeb from being committed
+4. Deploy `website/` folder to GitHub Pages
+5. Admin tools stay local on your machine
+
+**Why this approach?**
+- ✅ **Simple**: No Git submodules, no complex setup
+- ✅ **Clean**: ForgeWeb admin never gets deployed
+- ✅ **Portable**: Move ForgeWeb between projects easily
+- ✅ **Beginner-Friendly**: Just clone, move, and start building
 
 ## 🚀 Features
 
@@ -33,6 +62,51 @@ ForgeWeb is a comprehensive static site management solution that combines the po
 - **Local Development**: Built-in development server
 - **Version Control**: Git-friendly file structure
 - **CI/CD Ready**: Automated deployment workflows
+
+## 📋 Quick Start
+
+### Step 1: Clone ForgeWeb
+
+```bash
+git clone https://github.com/Buildly-Marketplace/ForgeWeb.git
+```
+
+### Step 2: Create Your GitHub Pages Repository
+
+```bash
+# On GitHub.com, create new repo: username.github.io (or any name)
+
+# Clone it locally
+git clone https://github.com/YOUR-USERNAME/YOUR-REPO.git
+cd YOUR-REPO
+
+# Move ForgeWeb into your repo
+mv ../ForgeWeb .
+```
+
+### Step 3: Start Building
+
+```bash
+cd ForgeWeb
+./start.sh
+
+# Open http://localhost:8000/admin/
+```
+
+That's it! ForgeWeb will auto-generate your homepage and create the `website/` folder.
+
+## 🌐 Deploy to GitHub Pages
+
+```bash
+# Commit your website content
+git add website/ .gitignore
+git commit -m "Add website"
+git push
+
+# On GitHub: Settings → Pages → Deploy from /website folder
+```
+
+Your site goes live at `https://YOUR-USERNAME.github.io/YOUR-REPO/`
 
 ## 📋 Quick Start
 
@@ -83,36 +157,46 @@ For detailed installation instructions and troubleshooting, see [INSTALL.md](INS
 
 ## 📂 File Structure & Deployment
 
-ForgeWeb creates files ready for GitHub Pages deployment:
+ForgeWeb keeps your admin tools separate from your website content:
 
 ```
-ForgeWeb/
-├── admin/              # Admin interface (local only, not deployed)
-│   ├── index.html     # Dashboard
-│   ├── editor.html    # Content editor
-│   ├── forgeweb.db    # SQLite database (settings, metadata)
-│   ├── site-config.json  # Site configuration (backward compatibility)
-│   └── database.py    # Database manager
+YourProject/
+├── ForgeWeb/           # Admin tools (local only, not deployed)
+│   ├── admin/         # Admin interface
+│   │   ├── index.html     # Dashboard
+│   │   ├── editor.html    # Content editor
+│   │   ├── forgeweb.db    # SQLite database (settings, metadata)
+│   │   ├── site-config.json  # Site configuration (backup)
+│   │   └── database.py    # Database manager
+│   ├── index.html     # Redirect to admin (local only)
+│   └── templates/     # Page templates (local only)
 │
-├── index.html         # YOUR SITE'S HOMEPAGE (deployed)
-├── 404.html           # Error page (deployed)
-├── articles/          # Your blog posts (deployed)
-├── assets/            # CSS, images, JS (deployed)
-│   ├── css/
-│   ├── images/
-│   └── js/
-│
-└── templates/         # Page templates (local only)
+└── website/            # YOUR WEBSITE CONTENT (gets deployed!)
+    ├── index.html     # YOUR SITE'S HOMEPAGE (deployed)
+    ├── 404.html       # Error page (deployed)
+    ├── articles/      # Your blog posts (deployed)
+    └── assets/        # CSS, images, JS (deployed)
+        ├── css/
+        ├── images/
+        └── js/
 ```
 
 **Important:** 
-- Content you create is saved to the **root directory** (where index.html lives)
-- The `admin/` folder stays local - it's your control panel
-- **Settings are stored in SQLite database** (`admin/forgeweb.db`) - never deployed
+- Your website content is saved to the **`website/` directory** - this is what gets deployed!
+- The `ForgeWeb/` folder stays local - it's your control panel
+- **Settings are stored in SQLite database** (`ForgeWeb/admin/forgeweb.db`) - never deployed
 - Your chosen design system, site config, and metadata are in the database
-- Everything else gets deployed to GitHub Pages
+- Only the `website/` directory contents get deployed to GitHub Pages
 
 📖 **See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions and best practices.**
+
+## 📚 Documentation
+
+- **[SETUP-REPO.md](SETUP-REPO.md)** - Complete guide for setting up your website repository
+- **[SUBMODULE-GUIDE.md](SUBMODULE-GUIDE.md)** - Quick reference for the submodule architecture
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Detailed explanation of how ForgeWeb works
+- **[DEPLOYMENT.md](admin/DEPLOYMENT.md)** - Deploy your site to GitHub Pages
+- **[QUICKSTART.md](QUICKSTART.md)** - 3-step quick start guide
 
 ## 🎯 Use Cases
 

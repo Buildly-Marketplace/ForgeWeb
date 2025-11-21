@@ -45,8 +45,76 @@ except ImportError:
 class ForgeWebHandler(BaseHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         self.admin_dir = os.path.dirname(os.path.abspath(__file__))
-        self.website_root = os.path.dirname(self.admin_dir)
+        # ForgeWeb directory (parent of admin/)
+        forge_web_dir = os.path.dirname(self.admin_dir)
+        # GitHub Pages repo root (parent of ForgeWeb/)
+        repo_root = os.path.dirname(forge_web_dir)
+        # Website files go in website/ subdirectory of the repo
+        self.website_root = os.path.join(repo_root, 'website')
+        
+        # Create website directory structure if it doesn't exist
+        os.makedirs(os.path.join(self.website_root, 'articles'), exist_ok=True)
+        os.makedirs(os.path.join(self.website_root, 'assets', 'css'), exist_ok=True)
+        os.makedirs(os.path.join(self.website_root, 'assets', 'images'), exist_ok=True)
+        
+        # Initialize repo with .gitignore if it doesn't exist
+        self._initialize_repo()
+        
         super().__init__(*args, **kwargs)
+    
+    def _initialize_repo(self):
+        """Initialize GitHub Pages repository with .gitignore"""
+        repo_root = os.path.dirname(os.path.dirname(self.admin_dir))
+        gitignore_path = os.path.join(repo_root, '.gitignore')
+        
+        if not os.path.exists(gitignore_path):
+            gitignore_content = """# ForgeWeb GitHub Pages Repository
+# Only the website/ folder gets deployed to GitHub Pages
+
+# ForgeWeb admin tools (not deployed)
+ForgeWeb/
+
+# Database and config (local only)
+*.db
+*.sqlite
+*.sqlite3
+admin/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+venv/
+env/
+.venv/
+.env
+.env.local
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files
+*.tmp
+*.bak
+*.cache
+.pytest_cache/
+*.log
+"""
+            with open(gitignore_path, 'w') as f:
+                f.write(gitignore_content)
+            print(f"✓ Created .gitignore in repository root")
+            print(f"  └─ ForgeWeb/ and admin files will not be committed")
     
     def get_config_value(self, key, default=None):
         """Get configuration value from environment or config file"""
@@ -317,7 +385,15 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
                 
                 self.send_json_response({'design': design_config})
             elif self.path == '/api/site-status':
-                self.send_json_response({'status': 'running', 'admin_url': '/admin/'})
+                # Check if user has created their homepage
+                homepage_path = os.path.join(self.website_root, 'index.html')
+                has_homepage = os.path.exists(homepage_path)
+                self.send_json_response({
+                    'status': 'running',
+                    'admin_url': '/admin/',
+                    'website_root': self.website_root,
+                    'has_homepage': has_homepage
+                })
             elif self.path == '/api/preview-url':
                 self.send_json_response({'preview_url': f'http://localhost:{self.server.server_port}/'})
             else:
@@ -1013,13 +1089,38 @@ def start_forgeweb_server(port=8000, host='localhost'):
         server = HTTPServer((host, port), ForgeWebHandler)
         server.server_port = port  # Store port for handlers to access
         
+        # Create a temporary handler to get paths
+        class PathHandler(ForgeWebHandler):
+            def __init__(self):
+                self.admin_dir = os.path.dirname(os.path.abspath(__file__))
+                forge_web_dir = os.path.dirname(self.admin_dir)
+                repo_root = os.path.dirname(forge_web_dir)
+                self.website_root = os.path.join(repo_root, 'website')
+        
+        path_info = PathHandler()
+        repo_root = os.path.dirname(os.path.dirname(path_info.admin_dir))
+        
         print(f"""
 🚀 ForgeWeb Server Starting...
 
-   Admin Interface: http://{host}:{port}/admin/
-   Site Preview:    http://{host}:{port}/
+📂 Directory Structure:
+   Repository Root:     {repo_root}/
+   ├── ForgeWeb/        (admin tools, not deployed)
+   └── website/         (your content, deployed to GitHub Pages)
    
-   Ready to create amazing websites! 🎨
+   ➡️  Your pages save to: {path_info.website_root}/
+   ➡️  ForgeWeb excluded via .gitignore
+
+🌐 URLs:
+   Admin Dashboard: http://{host}:{port}/admin/
+   Your Website:    http://{host}:{port}/
+   
+💡 Quick Start:
+   1. Choose a design system (auto-prompts on first visit)
+   2. Create pages and articles
+   3. Files save to website/ directory
+   4. Commit and push to GitHub
+   5. Enable GitHub Pages → Deploy from /website folder
    
 Press Ctrl+C to stop the server.
         """)

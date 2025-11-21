@@ -2,52 +2,54 @@
 
 ## 📂 Understanding the File Structure
 
-ForgeWeb is designed with GitHub Pages deployment in mind. Here's how the files are organized:
+ForgeWeb separates your website content from the admin tools. Here's how the files are organized:
 
 ```
-ForgeWeb/                          ← Main project directory (KEEP THIS)
-├── admin/                         ← Admin interface (LOCAL ONLY - not deployed)
-│   ├── index.html                ← Admin dashboard
-│   ├── editor.html               ← Content editor
-│   ├── file-api.py               ← Local development server
-│   ├── database.py               ← Database manager
-│   ├── forgeweb.db               ← SQLite database (config, metadata)
-│   └── site-config.json          ← Config backup (backward compatibility)
+Your Project Directory/
 │
-├── index.html                     ← YOUR SITE'S HOMEPAGE (deployed)
-├── 404.html                       ← Error page (deployed)
-├── about.html                     ← Your pages (deployed)
-├── contact.html                   ← Your pages (deployed)
+├── ForgeWeb/                      ← Admin tools (LOCAL ONLY - not deployed)
+│   ├── admin/                     ← Admin interface
+│   │   ├── index.html            ← Admin dashboard
+│   │   ├── editor.html           ← Content editor
+│   │   ├── file-api.py           ← Local development server
+│   │   ├── database.py           ← Database manager
+│   │   ├── forgeweb.db           ← SQLite database (config, metadata)
+│   │   └── site-config.json      ← Config backup
+│   ├── templates/                ← Page templates (LOCAL ONLY)
+│   │   ├── base.html
+│   │   └── article-template.html
+│   ├── start.sh / start.bat      ← Startup scripts
+│   ├── index.html                ← Redirect to admin (LOCAL ONLY)
+│   └── README.md                 ← Documentation
 │
-├── articles/                      ← Blog posts (deployed)
-│   ├── my-first-post.html
-│   └── another-article.html
-│
-├── assets/                        ← Site assets (deployed)
-│   ├── css/
-│   │   └── custom.css
-│   ├── images/
-│   │   └── your-images.jpg
-│   └── js/
-│       └── your-scripts.js
-│
-├── templates/                     ← Page templates (LOCAL ONLY)
-│   ├── base.html
-│   └── article-template.html
-│
-├── start.sh / start.bat           ← Startup scripts (LOCAL ONLY)
-└── README.md                      ← Documentation
+└── website/                       ← YOUR WEBSITE (gets deployed to GitHub Pages)
+    ├── index.html                 ← YOUR SITE'S HOMEPAGE (deployed)
+    ├── 404.html                   ← Error page (deployed)
+    ├── about.html                 ← Your pages (deployed)
+    ├── contact.html               ← Your pages (deployed)
+    │
+    ├── articles/                  ← Blog posts (deployed)
+    │   ├── my-first-post.html
+    │   └── another-article.html
+    │
+    └── assets/                    ← Site assets (deployed)
+        ├── css/
+        │   └── custom.css
+        ├── images/
+        │   └── your-images.jpg
+        └── js/
+            └── your-scripts.js
 
 ```
 
 ### 🎯 What Gets Deployed vs What Stays Local
 
-**DEPLOYED to GitHub Pages:**
-- ✅ `index.html` and all `.html` files in root
-- ✅ `assets/` folder (CSS, images, JavaScript)
-- ✅ `articles/` or `blog/` folders
-- ✅ Any custom content folders you create
-- ✅ `404.html` for custom error page
+**DEPLOYED to GitHub Pages (from `website/` directory):**
+- ✅ `website/index.html` and all `.html` files
+- ✅ `website/assets/` folder (CSS, images, JavaScript)
+- ✅ `website/articles/` or `website/blog/` folders
+- ✅ Any custom content folders you create in `website/`
+- ✅ `website/404.html` for custom error page
 
 **Stays LOCAL (not deployed):**
 - ❌ `admin/` folder - This is your local admin interface

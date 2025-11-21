@@ -1,53 +1,161 @@
-# Buildly AI Content Manager - Deployment Guide
+# ForgeWeb Deployment Guide
 
-This admin interface can be deployed to any static website for AI-powered content management.
+ForgeWeb uses a **git submodule architecture** to keep admin tools separate from your deployable website.
 
-## Quick Setup
+## 🏗️ File Structure
 
-### 1. Copy Admin Files
-Copy the entire `/admin/` folder to your website root:
 ```
-your-website/
-├── admin/
-│   ├── index.html
-│   ├── editor.html
-│   ├── settings.html
-│   ├── social.html
-│   ├── site-config.json
-│   ├── dev-server.py
-│   ├── js/
-│   └── css/
-├── articles/
-├── index.html
-└── other-website-files...
+your-website/                    ← Your main repository
+├── .git/
+├── .gitignore
+├── index.html                  ← Homepage (auto-generated)
+├── about.html
+├── contact.html
+├── articles/                   ← Blog posts
+│   └── my-first-post.html
+├── assets/                     ← CSS, images, JavaScript
+│   ├── css/
+│   └── images/
+└── ForgeWeb/                   ← Git submodule (NOT deployed)
+    ├── admin/                  ← Admin dashboard
+    │   ├── index.html
+    │   ├── editor.html
+    │   ├── forgeweb.db         ← SQLite database (local only)
+    │   └── file-api.py
+    ├── templates/
+    └── start.sh
 ```
 
-### 2. Configure for Your Site
-Edit `admin/site-config.json`:
+## 🚀 Deployment to GitHub Pages
 
-```json
-{
-    "site": {
-        "name": "Your Website Name",
-        "url": "https://yoursite.com",
-        "description": "Your site description",
-        "logo": "/path/to/your/logo.svg"
-    },
-    "content": {
-        "articlesFolder": "blog/",        // or "posts/" or "articles/"
-        "indexFile": "blog.html",         // or "index.html"
-        "defaultCategory": "General",
-        "categories": [
-            {"id": "Tech", "name": "Technology", "color": "blue-500"},
-            {"id": "Business", "name": "Business", "color": "green-500"}
-        ],
-        "folders": [
-            {"id": "blog/", "name": "blog/"},
-            {"id": "posts/", "name": "posts/"},
-            {"id": "", "name": "root folder"}
-        ]
-    },
-    "branding": {
+### Step 1: Initialize Your Website Repository
+
+```bash
+# Navigate to your website directory
+cd ~/Projects/my-website
+
+# Initialize git if not already done
+git init
+
+# Make sure you have a .gitignore
+cat > .gitignore << 'EOF'
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+
+# Temporary files
+*.tmp
+*.bak
+EOF
+
+# Commit your content
+git add .
+git commit -m "Initial website commit"
+```
+
+### Step 2: Create GitHub Repository
+
+```bash
+# Create a new repository on GitHub (via website), then:
+git remote add origin https://github.com/YOUR-USERNAME/YOUR-REPO.git
+git branch -M main
+git push -u origin main
+```
+
+### Step 3: Enable GitHub Pages
+
+### Step 3: Enable GitHub Pages
+
+1. Go to your repository on GitHub
+2. Click **Settings** → **Pages**
+3. Under **Source**, select:
+   - **Branch**: `main`
+   - **Folder**: `/ (root)`
+4. Click **Save**
+
+Your site will be live at: `https://YOUR-USERNAME.github.io/YOUR-REPO/`
+
+## ✅ What Gets Deployed
+
+### Deployed to GitHub Pages:
+- ✅ `index.html` - Your homepage
+- ✅ `about.html`, `contact.html` - Your pages
+- ✅ `articles/` - Blog posts
+- ✅ `assets/` - CSS, images, JavaScript
+- ✅ All HTML files you create
+
+### NOT Deployed (stays local):
+- ❌ `ForgeWeb/` - Git submodule (admin tools)
+- ❌ `ForgeWeb/admin/forgeweb.db` - SQLite database
+- ❌ `ForgeWeb/admin/` - Admin dashboard
+- ❌ `ForgeWeb/templates/` - Page templates
+- ❌ All ForgeWeb admin scripts
+
+## 🔄 Cloning on Another Machine
+
+When you or a team member clones your website repository:
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR-USERNAME/YOUR-REPO.git
+cd YOUR-REPO
+
+# Initialize the ForgeWeb submodule
+git submodule update --init --recursive
+
+# Start ForgeWeb
+cd ForgeWeb
+./start.sh
+```
+
+## 🔧 Updating ForgeWeb
+
+To update ForgeWeb to the latest version:
+
+```bash
+cd ~/Projects/my-website/ForgeWeb
+
+# Pull latest changes
+git pull origin main
+
+# Go back to main repo and commit the update
+cd ..
+git add ForgeWeb
+git commit -m "Update ForgeWeb to latest version"
+git push
+```
+
+## 🌐 Custom Domain
+
+To use a custom domain with GitHub Pages:
+
+1. Add a `CNAME` file to your website root:
+   ```bash
+   echo "www.yourdomain.com" > CNAME
+   git add CNAME
+   git commit -m "Add custom domain"
+   git push
+   ```
+
+2. Configure DNS with your domain provider:
+   - Add a `CNAME` record pointing to `YOUR-USERNAME.github.io`
+   - Or add `A` records pointing to GitHub's IPs (see [GitHub Docs](https://docs.github.com/en/pages/configuring-a-custom-domain-for-your-github-pages-site))
+
+3. Enable HTTPS in GitHub Pages settings
+
+## 🛠️ Troubleshooting
+
+### ForgeWeb submodule is empty after cloning
+```bash
+git submodule update --init --recursive
+```
+
+### Changes not showing on GitHub Pages
+```bash
         "primaryColor": "#your-color",
         "secondaryColor": "#your-secondary", 
         "accentColor": "#your-accent"
