@@ -449,11 +449,29 @@
                     throw new Error('Failed to save design system configuration');
                 }
                 
+                // Create the starter homepage
+                const homepageHtml = generateHomepageTemplate(selectedSystem, template);
+                const saveResponse = await fetch('/api/save-file', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        path: '../index.html',
+                        content: homepageHtml
+                    })
+                });
+                
+                if (!saveResponse.ok) {
+                    throw new Error('Failed to create homepage');
+                }
+                
                 // Mark as chosen
                 localStorage.setItem('forgeweb_design_chosen', 'true');
                 
-                // Redirect to page editor to create the first page
-                window.location.href = 'page-editor.html?new=true&design=' + selectedSystem;
+                // Show success and redirect to admin
+                alert('🎉 Success! Your homepage has been created with ' + selectedSystem + '!\n\nYou can now customize it in the Page Editor.');
+                window.location.href = 'index.html';
             } catch (error) {
                 console.error('Error setting up design system:', error);
                 alert('Error setting up design system. Please try again.');
@@ -504,6 +522,506 @@
             localStorage.setItem('forgeweb_template_bodyclass', template.bodyClass);
             
             return template;
+        }
+        
+        function generateHomepageTemplate(system, template) {
+            const siteName = 'My Website';
+            const bodyClass = template.bodyClass ? ` class="${template.bodyClass}"` : '';
+            
+            const templates = {
+                tailwind: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${siteName} - Home</title>
+    <meta name="description" content="Welcome to ${siteName}">
+    <script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body${bodyClass}>
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-6xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="/" class="text-2xl font-bold text-blue-600">${siteName}</a>
+                </div>
+                <div class="hidden md:flex items-center space-x-6">
+                    <a href="/" class="text-gray-700 hover:text-blue-600 font-medium">Home</a>
+                    <a href="/about.html" class="text-gray-700 hover:text-blue-600 font-medium">About</a>
+                    <a href="/contact.html" class="text-gray-700 hover:text-blue-600 font-medium">Contact</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-20">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <h1 class="text-5xl font-bold mb-4">Welcome to ${siteName}</h1>
+            <p class="text-xl mb-8">Build amazing websites with ease</p>
+            <div class="space-x-4">
+                <a href="#features" class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 inline-block">Learn More</a>
+                <a href="/contact.html" class="bg-transparent border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 inline-block">Get Started</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-16">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-4xl font-bold text-center mb-12 text-gray-800">Features</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="text-4xl mb-4">🚀</div>
+                    <h3 class="text-xl font-bold mb-2">Fast & Modern</h3>
+                    <p class="text-gray-600">Built with the latest web technologies for optimal performance.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="text-4xl mb-4">📱</div>
+                    <h3 class="text-xl font-bold mb-2">Responsive Design</h3>
+                    <p class="text-gray-600">Looks great on all devices, from mobile to desktop.</p>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow-lg">
+                    <div class="text-4xl mb-4">✨</div>
+                    <h3 class="text-xl font-bold mb-2">Easy to Customize</h3>
+                    <p class="text-gray-600">Modify colors, fonts, and content with ease.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16">
+        <div class="max-w-6xl mx-auto px-4 text-center">
+            <p>&copy; 2024 ${siteName}. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>`,
+
+                daisyui: `<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${siteName} - Home</title>
+    <meta name="description" content="Welcome to ${siteName}">
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="navbar bg-base-100 shadow-lg">
+        <div class="navbar-start">
+            <div class="dropdown">
+                <label tabindex="0" class="btn btn-ghost lg:hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16" /></svg>
+                </label>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52">
+                    <li><a href="/">Home</a></li>
+                    <li><a href="/about.html">About</a></li>
+                    <li><a href="/contact.html">Contact</a></li>
+                </ul>
+            </div>
+            <a href="/" class="btn btn-ghost text-xl">${siteName}</a>
+        </div>
+        <div class="navbar-center hidden lg:flex">
+            <ul class="menu menu-horizontal px-1">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about.html">About</a></li>
+                <li><a href="/contact.html">Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero min-h-screen bg-gradient-to-r from-primary to-secondary">
+        <div class="hero-content text-center text-neutral-content">
+            <div class="max-w-md">
+                <h1 class="mb-5 text-5xl font-bold">Welcome to ${siteName}</h1>
+                <p class="mb-5 text-xl">Build amazing websites with ease using DaisyUI and Tailwind CSS</p>
+                <div class="space-x-2">
+                    <button class="btn btn-primary">Get Started</button>
+                    <button class="btn btn-ghost">Learn More</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div class="py-16 bg-base-200">
+        <div class="max-w-6xl mx-auto px-4">
+            <h2 class="text-4xl font-bold text-center mb-12">Features</h2>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body items-center text-center">
+                        <div class="text-4xl mb-4">🚀</div>
+                        <h3 class="card-title">Fast & Modern</h3>
+                        <p>Built with the latest web technologies for optimal performance.</p>
+                    </div>
+                </div>
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body items-center text-center">
+                        <div class="text-4xl mb-4">📱</div>
+                        <h3 class="card-title">Responsive Design</h3>
+                        <p>Looks great on all devices, from mobile to desktop.</p>
+                    </div>
+                </div>
+                <div class="card bg-base-100 shadow-xl">
+                    <div class="card-body items-center text-center">
+                        <div class="text-4xl mb-4">✨</div>
+                        <h3 class="card-title">Easy to Customize</h3>
+                        <p>Modify colors, fonts, and content with ease.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer footer-center p-10 bg-base-300 text-base-content rounded">
+        <div>
+            <p>&copy; 2024 ${siteName}. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>`,
+
+                bootstrap: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${siteName} - Home</title>
+    <meta name="description" content="Welcome to ${siteName}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light shadow">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="/">${siteName}</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/about.html">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact.html">Contact</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="bg-primary text-white py-5">
+        <div class="container py-5 text-center">
+            <h1 class="display-3 fw-bold mb-4">Welcome to ${siteName}</h1>
+            <p class="lead mb-4">Build amazing websites with ease using Bootstrap</p>
+            <div>
+                <a href="#features" class="btn btn-light btn-lg me-2">Learn More</a>
+                <a href="/contact.html" class="btn btn-outline-light btn-lg">Get Started</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-5">
+        <div class="container py-5">
+            <h2 class="text-center mb-5 display-5 fw-bold">Features</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-body text-center">
+                            <div class="fs-1 mb-3">🚀</div>
+                            <h3 class="card-title">Fast & Modern</h3>
+                            <p class="card-text">Built with the latest web technologies for optimal performance.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-body text-center">
+                            <div class="fs-1 mb-3">📱</div>
+                            <h3 class="card-title">Responsive Design</h3>
+                            <p class="card-text">Looks great on all devices, from mobile to desktop.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 shadow">
+                        <div class="card-body text-center">
+                            <div class="fs-1 mb-3">✨</div>
+                            <h3 class="card-title">Easy to Customize</h3>
+                            <p class="card-text">Modify colors, fonts, and content with ease.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">&copy; 2024 ${siteName}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"><\/script>
+</body>
+</html>`,
+
+                bulma: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${siteName} - Home</title>
+    <meta name="description" content="Welcome to ${siteName}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar is-light" role="navigation">
+        <div class="container">
+            <div class="navbar-brand">
+                <a class="navbar-item has-text-primary has-text-weight-bold is-size-4" href="/">${siteName}</a>
+                <a role="button" class="navbar-burger" aria-label="menu">
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                    <span aria-hidden="true"></span>
+                </a>
+            </div>
+            <div class="navbar-menu">
+                <div class="navbar-end">
+                    <a class="navbar-item" href="/">Home</a>
+                    <a class="navbar-item" href="/about.html">About</a>
+                    <a class="navbar-item" href="/contact.html">Contact</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero is-primary is-medium">
+        <div class="hero-body">
+            <div class="container has-text-centered">
+                <h1 class="title is-1 is-size-2-mobile">Welcome to ${siteName}</h1>
+                <p class="subtitle is-4">Build amazing websites with ease using Bulma</p>
+                <div class="buttons is-centered">
+                    <a href="#features" class="button is-light is-medium">Learn More</a>
+                    <a href="/contact.html" class="button is-outlined is-light is-medium">Get Started</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="section">
+        <div class="container">
+            <h2 class="title is-2 has-text-centered mb-6">Features</h2>
+            <div class="columns">
+                <div class="column is-4">
+                    <div class="card">
+                        <div class="card-content has-text-centered">
+                            <p class="is-size-1 mb-4">🚀</p>
+                            <p class="title is-4">Fast & Modern</p>
+                            <p class="content">Built with the latest web technologies for optimal performance.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-4">
+                    <div class="card">
+                        <div class="card-content has-text-centered">
+                            <p class="is-size-1 mb-4">📱</p>
+                            <p class="title is-4">Responsive Design</p>
+                            <p class="content">Looks great on all devices, from mobile to desktop.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="column is-4">
+                    <div class="card">
+                        <div class="card-content has-text-centered">
+                            <p class="is-size-1 mb-4">✨</p>
+                            <p class="title is-4">Easy to Customize</p>
+                            <p class="content">Modify colors, fonts, and content with ease.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer has-background-dark has-text-white-ter">
+        <div class="content has-text-centered">
+            <p>&copy; 2024 ${siteName}. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>`,
+
+                uikit: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${siteName} - Home</title>
+    <meta name="description" content="Welcome to ${siteName}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css" />
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="uk-navbar-container uk-navbar-transparent" uk-navbar>
+        <div class="uk-navbar-left uk-margin-left">
+            <a class="uk-navbar-item uk-logo uk-text-primary uk-text-bold" href="/">${siteName}</a>
+        </div>
+        <div class="uk-navbar-right uk-margin-right">
+            <ul class="uk-navbar-nav">
+                <li class="uk-active"><a href="/">Home</a></li>
+                <li><a href="/about.html">About</a></li>
+                <li><a href="/contact.html">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="uk-section uk-section-primary uk-section-large uk-light">
+        <div class="uk-container uk-text-center">
+            <h1 class="uk-heading-large">Welcome to ${siteName}</h1>
+            <p class="uk-text-lead">Build amazing websites with ease using UIkit</p>
+            <div class="uk-margin-medium-top">
+                <a href="#features" class="uk-button uk-button-default uk-button-large uk-margin-small-right" uk-scroll>Learn More</a>
+                <a href="/contact.html" class="uk-button uk-button-primary uk-button-large">Get Started</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div id="features" class="uk-section">
+        <div class="uk-container">
+            <h2 class="uk-heading-medium uk-text-center uk-margin-large-bottom">Features</h2>
+            <div class="uk-child-width-1-3@m uk-grid-match" uk-grid>
+                <div>
+                    <div class="uk-card uk-card-default uk-card-body uk-text-center">
+                        <p class="uk-text-large">🚀</p>
+                        <h3 class="uk-card-title">Fast & Modern</h3>
+                        <p>Built with the latest web technologies for optimal performance.</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="uk-card uk-card-default uk-card-body uk-text-center">
+                        <p class="uk-text-large">📱</p>
+                        <h3 class="uk-card-title">Responsive Design</h3>
+                        <p>Looks great on all devices, from mobile to desktop.</p>
+                    </div>
+                </div>
+                <div>
+                    <div class="uk-card uk-card-default uk-card-body uk-text-center">
+                        <p class="uk-text-large">✨</p>
+                        <h3 class="uk-card-title">Easy to Customize</h3>
+                        <p>Modify colors, fonts, and content with ease.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="uk-section uk-section-secondary uk-light">
+        <div class="uk-container uk-text-center">
+            <p>&copy; 2024 ${siteName}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/js/uikit.min.js"><\/script>
+</body>
+</html>`,
+
+                foundation: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${siteName} - Home</title>
+    <meta name="description" content="Welcome to ${siteName}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/css/foundation.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <div class="top-bar">
+        <div class="top-bar-left">
+            <ul class="menu">
+                <li class="menu-text"><strong>${siteName}</strong></li>
+            </ul>
+        </div>
+        <div class="top-bar-right">
+            <ul class="menu">
+                <li><a href="/">Home</a></li>
+                <li><a href="/about.html">About</a></li>
+                <li><a href="/contact.html">Contact</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="callout large primary text-center">
+        <div class="grid-container">
+            <h1 class="display">Welcome to ${siteName}</h1>
+            <p class="lead">Build amazing websites with ease using Foundation</p>
+            <a href="#features" class="button large">Learn More</a>
+            <a href="/contact.html" class="button large hollow">Get Started</a>
+        </div>
+    </div>
+
+    <!-- Features Section -->
+    <div id="features" class="grid-container" style="padding: 4rem 0;">
+        <h2 class="text-center" style="margin-bottom: 3rem;">Features</h2>
+        <div class="grid-x grid-margin-x">
+            <div class="cell medium-4">
+                <div class="card">
+                    <div class="card-section text-center">
+                        <p style="font-size: 3rem; margin-bottom: 1rem;">🚀</p>
+                        <h3>Fast & Modern</h3>
+                        <p>Built with the latest web technologies for optimal performance.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="cell medium-4">
+                <div class="card">
+                    <div class="card-section text-center">
+                        <p style="font-size: 3rem; margin-bottom: 1rem;">📱</p>
+                        <h3>Responsive Design</h3>
+                        <p>Looks great on all devices, from mobile to desktop.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="cell medium-4">
+                <div class="card">
+                    <div class="card-section text-center">
+                        <p style="font-size: 3rem; margin-bottom: 1rem;">✨</p>
+                        <h3>Easy to Customize</h3>
+                        <p>Modify colors, fonts, and content with ease.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="callout secondary text-center" style="margin-top: 4rem;">
+        <p>&copy; 2024 ${siteName}. All rights reserved.</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/js/foundation.min.js"><\/script>
+</body>
+</html>`
+            };
+            
+            return templates[system] || templates.tailwind;
         }
         
         function skipSetup() {

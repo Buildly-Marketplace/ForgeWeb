@@ -13,8 +13,12 @@ from pathlib import Path
 class ForgeWebDB:
     """Manage ForgeWeb database operations"""
     
-    def __init__(self, db_path='admin/forgeweb.db'):
+    def __init__(self, db_path=None):
         """Initialize database connection"""
+        if db_path is None:
+            # Get the directory where this script is located (admin/)
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            db_path = os.path.join(script_dir, 'forgeweb.db')
         self.db_path = db_path
         self.conn = None
         self.initialize_db()

@@ -386,79 +386,588 @@
                 const currentHtml = this.pageEditor.editor ? this.pageEditor.editor.getValue() : '';
                 const currentFile = this.pageEditor.currentFile || 'unknown';
 
-                // Create context about Buildly design system
-                const systemContext = `You are an AI assistant helping with Buildly website development. 
+                // Get the chosen design system
+                const designSystem = localStorage.getItem('forgeweb_design_system') || 'tailwind';
+                const designConfig = await this.getDesignSystemConfig();
 
-Buildly Design System:
-- Colors: Primary #1b5fa3, Secondary #144a84, Accent #f9943b
-- Tailwind classes: bg-buildly-primary, text-buildly-primary, etc.
-- Layout: Use max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 for containers
-- Buttons: bg-buildly-primary text-white with hover:bg-buildly-secondary
-- Sections: py-20 for vertical spacing
-- Typography: Use Inter font family
+                // Create context about the chosen design system
+                const systemContext = `You are an AI assistant helping with website development using ForgeWeb.
+
+IMPORTANT: The user has chosen ${designSystem.toUpperCase()} as their design system.
+${this.getDesignSystemInstructions(designSystem)}
+
+Design System Configuration:
+- Framework: ${designSystem}
+- CDN URLs: ${designConfig.cdn_urls ? designConfig.cdn_urls.join(', ') : 'Not set'}
+- Body Classes: ${designConfig.body_classes || 'None'}
+
+CRITICAL RULES:
+1. ALWAYS use ${designSystem.toUpperCase()} classes and components - DO NOT use classes from other frameworks
+2. Follow ${designSystem.toUpperCase()} naming conventions and patterns
+3. Only deviate from ${designSystem.toUpperCase()} if the user explicitly asks to override the design system
+4. Ensure all generated code is compatible with the CDN version being used
+5. Use semantic HTML5 elements where appropriate
 
 Current file: ${currentFile}
 User request: ${prompt}
 
-Please provide specific HTML changes that follow Buildly's design system. If you suggest code changes, provide the exact HTML that should be modified or added.`;
+Please provide specific HTML changes that follow the ${designSystem.toUpperCase()} design system. If you suggest code changes, provide the exact HTML that should be modified or added.`;
 
                 // For demo purposes, provide intelligent responses based on common requests
-                const response = this.generateResponse(prompt, currentHtml, currentFile);
+                const response = this.generateResponse(prompt, currentHtml, currentFile, designSystem);
                 return response;
             }
 
-            generateResponse(prompt, currentHtml, currentFile) {
+            async getDesignSystemConfig() {
+                try {
+                    const response = await fetch('/api/design-system');
+                    if (response.ok) {
+                        const data = await response.json();
+                        return data.design || {};
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch design system config:', error);
+                }
+                
+                // Fallback to localStorage
+                return {
+                    system: localStorage.getItem('forgeweb_design_system') || 'tailwind',
+                    cdn_urls: localStorage.getItem('forgeweb_template_cdn') ? [localStorage.getItem('forgeweb_template_cdn')] : [],
+                    body_classes: localStorage.getItem('forgeweb_template_bodyclass') || ''
+                };
+            }
+
+            getDesignSystemInstructions(system) {
+                const instructions = {
+                    tailwind: `Use Tailwind CSS utility classes:
+- Layout: Use flexbox (flex, items-center) and grid (grid, grid-cols-3)
+- Spacing: Use p-4, m-4, px-6, py-8, gap-4, space-x-4
+- Colors: Use bg-blue-500, text-white, hover:bg-blue-600
+- Typography: Use text-xl, font-bold, leading-tight
+- Responsive: Use md:, lg:, xl: prefixes (e.g., md:grid-cols-3)
+- Example button: <button class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600">Click Me</button>`,
+
+                    daisyui: `Use DaisyUI components with Tailwind:
+- Buttons: Use btn, btn-primary, btn-secondary, btn-accent, btn-ghost
+- Cards: Use card, card-body, card-title, card-actions
+- Layout: Use hero, hero-content, navbar, footer, drawer
+- Forms: Use input, input-bordered, select, checkbox, radio
+- Utilities: Use badge, alert, toast, modal, dropdown
+- Example: <button class="btn btn-primary">Click Me</button>
+- Example: <div class="card bg-base-100 shadow-xl"><div class="card-body">Content</div></div>`,
+
+                    bootstrap: `Use Bootstrap 5 classes and components:
+- Layout: Use container, row, col-md-4, d-flex, justify-content-center
+- Buttons: Use btn, btn-primary, btn-secondary, btn-lg
+- Cards: Use card, card-body, card-title, card-text
+- Navigation: Use navbar, nav, nav-item, nav-link
+- Utilities: Use m-3, p-3, mt-4, mb-5, text-center, bg-primary
+- Example button: <button class="btn btn-primary btn-lg">Click Me</button>
+- Example card: <div class="card"><div class="card-body"><h5 class="card-title">Title</h5></div></div>`,
+
+                    bulma: `Use Bulma CSS classes:
+- Layout: Use container, columns, column, is-4, is-centered
+- Buttons: Use button, is-primary, is-large, is-rounded
+- Cards: Use card, card-content, card-header, card-footer
+- Elements: Use box, notification, message, tag, title, subtitle
+- Modifiers: Use is-primary, is-large, is-fullwidth, has-text-centered
+- Example button: <button class="button is-primary is-large">Click Me</button>
+- Example: <div class="columns"><div class="column is-4">Content</div></div>`,
+
+                    uikit: `Use UIkit classes and attributes:
+- Layout: Use uk-container, uk-grid, uk-width-1-3, uk-flex, uk-flex-center
+- Buttons: Use uk-button, uk-button-primary, uk-button-large
+- Cards: Use uk-card, uk-card-body, uk-card-title, uk-card-default
+- Navigation: Use uk-navbar, uk-nav, uk-subnav
+- Attributes: Use uk-grid, uk-lightbox, uk-slider, uk-accordion
+- Example button: <button class="uk-button uk-button-primary uk-button-large">Click Me</button>
+- Example grid: <div class="uk-grid" uk-grid><div class="uk-width-1-3">Content</div></div>`,
+
+                    foundation: `Use Foundation 6 classes:
+- Layout: Use grid-container, grid-x, cell, medium-4, large-6
+- Buttons: Use button, primary, secondary, large, expanded
+- Cards: Use card, card-divider, card-section
+- Navigation: Use top-bar, menu, menu-text
+- Utilities: Use text-center, float-left, show-for-medium, hide-for-small
+- Example button: <a class="button primary large">Click Me</a>
+- Example grid: <div class="grid-x"><div class="cell medium-4">Content</div></div>`
+                };
+
+                return instructions[system] || instructions.tailwind;
+            }
+
+            generateResponse(prompt, currentHtml, currentFile, designSystem = 'tailwind') {
                 const lowerPrompt = prompt.toLowerCase();
+                
+                // Get framework-specific examples
+                const examples = this.getFrameworkExamples(designSystem);
                 
                 // Analyze the prompt and provide appropriate responses
                 if (lowerPrompt.includes('hero') || lowerPrompt.includes('banner')) {
                     return {
-                        message: "I'll help you create a hero section with Buildly's design system. Here's a modern hero pattern:",
-                        code: `<section class="relative bg-gradient-to-r from-buildly-primary to-buildly-secondary text-white py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center">
-            <h1 class="text-4xl md:text-6xl font-bold mb-6">
-                Build Better with AI
-            </h1>
-            <p class="text-xl md:text-2xl mb-8 text-white text-opacity-90 max-w-3xl mx-auto">
-                Transform your development workflow with Buildly's AI-powered platform
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="https://labs.buildly.io" class="bg-buildly-accent text-white px-8 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition-colors">
-                    Try for Free
-                </a>
-                <a href="#learn-more" class="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-buildly-primary transition-colors">
-                    Learn More
-                </a>
-            </div>
-        </div>
-    </div>
-</section>`
+                        message: `I'll help you create a hero section using ${designSystem.toUpperCase()}. Here's a modern hero pattern:`,
+                        code: examples.hero
                     };
                 }
                 
                 if (lowerPrompt.includes('button') || lowerPrompt.includes('cta')) {
                     return {
-                        message: "Here are some Buildly-styled button examples you can use:",
-                        code: `<!-- Primary Button -->
-<a href="https://labs.buildly.io" class="bg-buildly-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-buildly-secondary transition-colors">
-    Try for Free
-</a>
-
-<!-- Secondary Button -->
-<a href="#learn-more" class="border border-buildly-accent text-buildly-accent px-8 py-3 rounded-lg font-semibold hover:bg-buildly-accent hover:text-white transition-colors">
-    Learn More
-</a>
-
-<!-- Accent Button -->
-<button class="bg-buildly-accent text-white px-6 py-2 rounded-lg font-medium hover:bg-opacity-90 transition-colors">
-    Get Started
-</button>`
+                        message: `Here are ${designSystem.toUpperCase()}-styled button examples you can use:`,
+                        code: examples.buttons
                     };
                 }
                 
                 if (lowerPrompt.includes('section') || lowerPrompt.includes('layout')) {
                     return {
+                        message: `Here's a standard content section using ${designSystem.toUpperCase()}:`,
+                        code: examples.section
+                    };
+                }
+
+                if (lowerPrompt.includes('card') || lowerPrompt.includes('feature')) {
+                    return {
+                        message: `Here's a feature card grid using ${designSystem.toUpperCase()}:`,
+                        code: examples.cards
+                    };
+                }
+
+                if (lowerPrompt.includes('nav') || lowerPrompt.includes('menu')) {
+                    return {
+                        message: `Here's a navigation bar using ${designSystem.toUpperCase()}:`,
+                        code: examples.nav
+                    };
+                }
+                
+                // Default response
+                return {
+                    message: `I can help you with ${designSystem.toUpperCase()}-based components! Try asking for:
+- "Add a hero section"
+- "Create a button"
+- "Add feature cards"
+- "Create a navigation menu"
+- "Add a content section"
+
+Remember: All code will use ${designSystem.toUpperCase()} classes and components.`,
+                    code: null
+                };
+            }
+
+            getFrameworkExamples(system) {
+                const examples = {
+                    tailwind: {
+                        hero: `<section class="bg-gradient-to-r from-blue-500 to-purple-600 text-white py-20">
+    <div class="max-w-6xl mx-auto px-4 text-center">
+        <h1 class="text-5xl font-bold mb-4">Welcome to My Website</h1>
+        <p class="text-xl mb-8">Build amazing things with Tailwind CSS</p>
+        <div class="space-x-4">
+            <button class="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100">Get Started</button>
+            <button class="bg-transparent border-2 border-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600">Learn More</button>
+        </div>
+    </div>
+</section>`,
+                        buttons: `<!-- Primary Button -->
+<button class="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+    Primary Button
+</button>
+
+<!-- Secondary Button -->
+<button class="bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 transition">
+    Secondary Button
+</button>
+
+<!-- Outline Button -->
+<button class="border-2 border-blue-600 text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-blue-600 hover:text-white transition">
+    Outline Button
+</button>`,
+                        section: `<section class="py-16 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-4xl font-bold text-center mb-12">Section Title</h2>
+        <p class="text-lg text-gray-600 text-center max-w-3xl mx-auto">
+            Your content goes here. This is a standard section with Tailwind styling.
+        </p>
+    </div>
+</section>`,
+                        cards: `<div class="grid md:grid-cols-3 gap-8">
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <div class="text-4xl mb-4">🚀</div>
+        <h3 class="text-xl font-bold mb-2">Feature One</h3>
+        <p class="text-gray-600">Description of your first feature.</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <div class="text-4xl mb-4">⚡</div>
+        <h3 class="text-xl font-bold mb-2">Feature Two</h3>
+        <p class="text-gray-600">Description of your second feature.</p>
+    </div>
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <div class="text-4xl mb-4">✨</div>
+        <h3 class="text-xl font-bold mb-2">Feature Three</h3>
+        <p class="text-gray-600">Description of your third feature.</p>
+    </div>
+</div>`,
+                        nav: `<nav class="bg-white shadow-lg">
+    <div class="max-w-6xl mx-auto px-4">
+        <div class="flex justify-between items-center py-4">
+            <a href="/" class="text-2xl font-bold text-blue-600">Logo</a>
+            <div class="flex items-center space-x-6">
+                <a href="/" class="text-gray-700 hover:text-blue-600">Home</a>
+                <a href="/about.html" class="text-gray-700 hover:text-blue-600">About</a>
+                <a href="/contact.html" class="text-gray-700 hover:text-blue-600">Contact</a>
+            </div>
+        </div>
+    </div>
+</nav>`
+                    },
+                    daisyui: {
+                        hero: `<div class="hero min-h-screen bg-gradient-to-r from-primary to-secondary">
+    <div class="hero-content text-center text-neutral-content">
+        <div class="max-w-md">
+            <h1 class="mb-5 text-5xl font-bold">Welcome to My Website</h1>
+            <p class="mb-5">Build amazing things with DaisyUI</p>
+            <button class="btn btn-primary">Get Started</button>
+            <button class="btn btn-ghost ml-2">Learn More</button>
+        </div>
+    </div>
+</div>`,
+                        buttons: `<!-- Primary Button -->
+<button class="btn btn-primary">Primary Button</button>
+
+<!-- Secondary Button -->
+<button class="btn btn-secondary">Secondary Button</button>
+
+<!-- Accent Button -->
+<button class="btn btn-accent">Accent Button</button>
+
+<!-- Outline Button -->
+<button class="btn btn-outline btn-primary">Outline Button</button>`,
+                        section: `<section class="py-16 bg-base-200">
+    <div class="max-w-6xl mx-auto px-4">
+        <h2 class="text-4xl font-bold text-center mb-12">Section Title</h2>
+        <p class="text-lg text-center max-w-3xl mx-auto">
+            Your content goes here. This is a standard section with DaisyUI styling.
+        </p>
+    </div>
+</section>`,
+                        cards: `<div class="grid md:grid-cols-3 gap-8">
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <div class="text-4xl mb-4">🚀</div>
+            <h3 class="card-title">Feature One</h3>
+            <p>Description of your first feature.</p>
+        </div>
+    </div>
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <div class="text-4xl mb-4">⚡</div>
+            <h3 class="card-title">Feature Two</h3>
+            <p>Description of your second feature.</p>
+        </div>
+    </div>
+    <div class="card bg-base-100 shadow-xl">
+        <div class="card-body items-center text-center">
+            <div class="text-4xl mb-4">✨</div>
+            <h3 class="card-title">Feature Three</h3>
+            <p>Description of your third feature.</p>
+        </div>
+    </div>
+</div>`,
+                        nav: `<div class="navbar bg-base-100 shadow-lg">
+    <div class="navbar-start">
+        <a href="/" class="btn btn-ghost text-xl">Logo</a>
+    </div>
+    <div class="navbar-center hidden lg:flex">
+        <ul class="menu menu-horizontal px-1">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+        </ul>
+    </div>
+</div>`
+                    },
+                    bootstrap: {
+                        hero: `<section class="bg-primary text-white py-5">
+    <div class="container py-5 text-center">
+        <h1 class="display-3 fw-bold mb-4">Welcome to My Website</h1>
+        <p class="lead mb-4">Build amazing things with Bootstrap</p>
+        <button class="btn btn-light btn-lg me-2">Get Started</button>
+        <button class="btn btn-outline-light btn-lg">Learn More</button>
+    </div>
+</section>`,
+                        buttons: `<!-- Primary Button -->
+<button class="btn btn-primary">Primary Button</button>
+
+<!-- Secondary Button -->
+<button class="btn btn-secondary">Secondary Button</button>
+
+<!-- Success Button -->
+<button class="btn btn-success">Success Button</button>
+
+<!-- Outline Button -->
+<button class="btn btn-outline-primary">Outline Button</button>`,
+                        section: `<section class="py-5 bg-light">
+    <div class="container py-5">
+        <h2 class="text-center mb-5 display-5 fw-bold">Section Title</h2>
+        <p class="lead text-center">
+            Your content goes here. This is a standard section with Bootstrap styling.
+        </p>
+    </div>
+</section>`,
+                        cards: `<div class="row g-4">
+    <div class="col-md-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <div class="fs-1 mb-3">🚀</div>
+                <h3 class="card-title">Feature One</h3>
+                <p class="card-text">Description of your first feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <div class="fs-1 mb-3">⚡</div>
+                <h3 class="card-title">Feature Two</h3>
+                <p class="card-text">Description of your second feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 shadow">
+            <div class="card-body text-center">
+                <div class="fs-1 mb-3">✨</div>
+                <h3 class="card-title">Feature Three</h3>
+                <p class="card-text">Description of your third feature.</p>
+            </div>
+        </div>
+    </div>
+</div>`,
+                        nav: `<nav class="navbar navbar-expand-lg navbar-light bg-light shadow">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">Logo</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/about.html">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="/contact.html">Contact</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>`
+                    },
+                    bulma: {
+                        hero: `<section class="hero is-primary is-medium">
+    <div class="hero-body">
+        <div class="container has-text-centered">
+            <h1 class="title is-1">Welcome to My Website</h1>
+            <p class="subtitle is-4">Build amazing things with Bulma</p>
+            <button class="button is-light is-medium">Get Started</button>
+            <button class="button is-outlined is-light is-medium ml-2">Learn More</button>
+        </div>
+    </div>
+</section>`,
+                        buttons: `<!-- Primary Button -->
+<button class="button is-primary">Primary Button</button>
+
+<!-- Info Button -->
+<button class="button is-info">Info Button</button>
+
+<!-- Success Button -->
+<button class="button is-success">Success Button</button>
+
+<!-- Outline Button -->
+<button class="button is-outlined is-primary">Outline Button</button>`,
+                        section: `<section class="section">
+    <div class="container">
+        <h2 class="title is-2 has-text-centered mb-6">Section Title</h2>
+        <p class="content has-text-centered">
+            Your content goes here. This is a standard section with Bulma styling.
+        </p>
+    </div>
+</section>`,
+                        cards: `<div class="columns">
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content has-text-centered">
+                <p class="is-size-1 mb-4">🚀</p>
+                <p class="title is-4">Feature One</p>
+                <p class="content">Description of your first feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content has-text-centered">
+                <p class="is-size-1 mb-4">⚡</p>
+                <p class="title is-4">Feature Two</p>
+                <p class="content">Description of your second feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="column is-4">
+        <div class="card">
+            <div class="card-content has-text-centered">
+                <p class="is-size-1 mb-4">✨</p>
+                <p class="title is-4">Feature Three</p>
+                <p class="content">Description of your third feature.</p>
+            </div>
+        </div>
+    </div>
+</div>`,
+                        nav: `<nav class="navbar is-light" role="navigation">
+    <div class="container">
+        <div class="navbar-brand">
+            <a class="navbar-item has-text-weight-bold is-size-4" href="/">Logo</a>
+        </div>
+        <div class="navbar-menu">
+            <div class="navbar-end">
+                <a class="navbar-item" href="/">Home</a>
+                <a class="navbar-item" href="/about.html">About</a>
+                <a class="navbar-item" href="/contact.html">Contact</a>
+            </div>
+        </div>
+    </div>
+</nav>`
+                    },
+                    uikit: {
+                        hero: `<div class="uk-section uk-section-primary uk-section-large uk-light">
+    <div class="uk-container uk-text-center">
+        <h1 class="uk-heading-large">Welcome to My Website</h1>
+        <p class="uk-text-lead">Build amazing things with UIkit</p>
+        <button class="uk-button uk-button-default uk-button-large uk-margin-small-right">Get Started</button>
+        <button class="uk-button uk-button-primary uk-button-large">Learn More</button>
+    </div>
+</div>`,
+                        buttons: `<!-- Primary Button -->
+<button class="uk-button uk-button-primary">Primary Button</button>
+
+<!-- Secondary Button -->
+<button class="uk-button uk-button-secondary">Secondary Button</button>
+
+<!-- Success Button -->
+<button class="uk-button uk-button-success">Success Button</button>
+
+<!-- Default Button -->
+<button class="uk-button uk-button-default">Default Button</button>`,
+                        section: `<div class="uk-section">
+    <div class="uk-container">
+        <h2 class="uk-heading-medium uk-text-center uk-margin-large-bottom">Section Title</h2>
+        <p class="uk-text-lead uk-text-center">
+            Your content goes here. This is a standard section with UIkit styling.
+        </p>
+    </div>
+</div>`,
+                        cards: `<div class="uk-child-width-1-3@m uk-grid-match" uk-grid>
+    <div>
+        <div class="uk-card uk-card-default uk-card-body uk-text-center">
+            <p class="uk-text-large">🚀</p>
+            <h3 class="uk-card-title">Feature One</h3>
+            <p>Description of your first feature.</p>
+        </div>
+    </div>
+    <div>
+        <div class="uk-card uk-card-default uk-card-body uk-text-center">
+            <p class="uk-text-large">⚡</p>
+            <h3 class="uk-card-title">Feature Two</h3>
+            <p>Description of your second feature.</p>
+        </div>
+    </div>
+    <div>
+        <div class="uk-card uk-card-default uk-card-body uk-text-center">
+            <p class="uk-text-large">✨</p>
+            <h3 class="uk-card-title">Feature Three</h3>
+            <p>Description of your third feature.</p>
+        </div>
+    </div>
+</div>`,
+                        nav: `<nav class="uk-navbar-container" uk-navbar>
+    <div class="uk-navbar-left uk-margin-left">
+        <a class="uk-navbar-item uk-logo uk-text-bold" href="/">Logo</a>
+    </div>
+    <div class="uk-navbar-right uk-margin-right">
+        <ul class="uk-navbar-nav">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+        </ul>
+    </div>
+</nav>`
+                    },
+                    foundation: {
+                        hero: `<div class="callout large primary text-center">
+    <div class="grid-container">
+        <h1 class="display">Welcome to My Website</h1>
+        <p class="lead">Build amazing things with Foundation</p>
+        <a href="#" class="button large">Get Started</a>
+        <a href="#" class="button large hollow">Learn More</a>
+    </div>
+</div>`,
+                        buttons: `<!-- Primary Button -->
+<a href="#" class="button primary">Primary Button</a>
+
+<!-- Secondary Button -->
+<a href="#" class="button secondary">Secondary Button</a>
+
+<!-- Success Button -->
+<a href="#" class="button success">Success Button</a>
+
+<!-- Hollow Button -->
+<a href="#" class="button hollow">Hollow Button</a>`,
+                        section: `<div class="grid-container" style="padding: 4rem 0;">
+    <h2 class="text-center" style="margin-bottom: 3rem;">Section Title</h2>
+    <p class="lead text-center">
+        Your content goes here. This is a standard section with Foundation styling.
+    </p>
+</div>`,
+                        cards: `<div class="grid-x grid-margin-x">
+    <div class="cell medium-4">
+        <div class="card">
+            <div class="card-section text-center">
+                <p style="font-size: 3rem;">🚀</p>
+                <h3>Feature One</h3>
+                <p>Description of your first feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-4">
+        <div class="card">
+            <div class="card-section text-center">
+                <p style="font-size: 3rem;">⚡</p>
+                <h3>Feature Two</h3>
+                <p>Description of your second feature.</p>
+            </div>
+        </div>
+    </div>
+    <div class="cell medium-4">
+        <div class="card">
+            <div class="card-section text-center">
+                <p style="font-size: 3rem;">✨</p>
+                <h3>Feature Three</h3>
+                <p>Description of your third feature.</p>
+            </div>
+        </div>
+    </div>
+</div>`,
+                        nav: `<div class="top-bar">
+    <div class="top-bar-left">
+        <ul class="menu">
+            <li class="menu-text"><strong>Logo</strong></li>
+        </ul>
+    </div>
+    <div class="top-bar-right">
+        <ul class="menu">
+            <li><a href="/">Home</a></li>
+            <li><a href="/about.html">About</a></li>
+            <li><a href="/contact.html">Contact</a></li>
+        </ul>
+    </div>
+</div>`
+                    }
+                };
+
+                return examples[system] || examples.tailwind;
+            }
                         message: "Here's a standard Buildly section layout pattern:",
                         code: `<section class="py-20 bg-white">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -8,12 +8,13 @@
     "support_url": "https://docs.buildly.io/forgeweb"
   },
   "design": {
-    "system": "tailwind",
+    "system": "daisyui",
     "cdn_urls": [
+      "https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css",
       "https://cdn.tailwindcss.com"
     ],
     "custom_css": "",
-    "body_classes": "bg-gray-50"
+    "body_classes": ""
   },
   "content": {
     "site_type": "blog",

@@ -300,6 +300,22 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
             if self.path == '/api/branding':
                 branding_config = self.load_branding_config()
                 self.send_json_response(branding_config)
+            elif self.path == '/api/design-system':
+                # Return design system configuration
+                config_path = os.path.join(self.admin_dir, 'site-config.json')
+                design_config = {}
+                if os.path.exists(config_path):
+                    with open(config_path, 'r') as f:
+                        config = json.load(f)
+                        design_config = config.get('design', {})
+                
+                # Also try to get from database
+                if db and not design_config:
+                    db_config = db.get_design_config()
+                    if db_config:
+                        design_config = db_config
+                
+                self.send_json_response({'design': design_config})
             elif self.path == '/api/site-status':
                 self.send_json_response({'status': 'running', 'admin_url': '/admin/'})
             elif self.path == '/api/preview-url':
