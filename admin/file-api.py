@@ -139,6 +139,13 @@ Thumbs.db
         """Handle GET requests for both admin and preview"""
         parsed_path = urlparse(self.path)
         
+        # Handle /admin redirect (without trailing slash)
+        if self.path == '/admin':
+            self.send_response(301)
+            self.send_header('Location', '/admin/')
+            self.end_headers()
+            return
+        
         if self.path.startswith('/admin/'):
             # Serve admin files
             self.serve_admin_file(parsed_path.path)
@@ -396,6 +403,59 @@ Thumbs.db
                 })
             elif self.path == '/api/preview-url':
                 self.send_json_response({'preview_url': f'http://localhost:{self.server.server_port}/'})
+            elif self.path.startswith('/api/load-file?'):
+                # Load a file from the website directory
+                parsed = urlparse(self.path)
+                params = parse_qs(parsed.query)
+                filename = params.get('file', [''])[0]
+                
+                if not filename:
+                    self.send_json_error(400, 'Missing file parameter')
+                    return
+                
+                # Security: prevent directory traversal
+                if '..' in filename or filename.startswith('/'):
+                    self.send_json_error(403, 'Invalid file path')
+                    return
+                
+                file_path = os.path.join(self.website_root, filename)
+                
+                if os.path.exists(file_path) and os.path.isfile(file_path):
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    self.send_json_response({'content': content, 'filename': filename})
+                else:
+                    self.send_json_error(404, f'File not found: {filename}')
+            elif self.path == '/api/list-html-files':
+                # List all HTML files in the website directory
+                files = []
+                
+                if os.path.exists(self.website_root):
+                    for root, dirs, filenames in os.walk(self.website_root):
+                        for filename in filenames:
+                            if filename.endswith('.html'):
+                                # Get relative path from website root
+                                full_path = os.path.join(root, filename)
+                                rel_path = os.path.relpath(full_path, self.website_root)
+                                
+                                # Try to extract page title from HTML
+                                description = rel_path
+                                try:
+                                    with open(full_path, 'r', encoding='utf-8') as f:
+                                        content = f.read(2000)  # Read first 2000 chars
+                                        import re
+                                        title_match = re.search(r'<title[^>]*>([^<]+)</title>', content, re.IGNORECASE)
+                                        if title_match:
+                                            description = title_match.group(1).strip()
+                                except:
+                                    pass
+                                
+                                files.append({
+                                    'filename': rel_path,
+                                    'description': description
+                                })
+                
+                self.send_json_response({'files': files})
             else:
                 endpoint = self.path.replace('/api/', '')
                 self.send_json_error(404, f"API endpoint not found: {endpoint}")
@@ -1101,7 +1161,7 @@ def start_forgeweb_server(port=8000, host='localhost'):
         repo_root = os.path.dirname(os.path.dirname(path_info.admin_dir))
         
         print(f"""
-🚀 ForgeWeb Server Starting...
+🚀 ForgeWeb Server Running!
 
 📂 Directory Structure:
    Repository Root:     {repo_root}/
@@ -1111,16 +1171,18 @@ def start_forgeweb_server(port=8000, host='localhost'):
    ➡️  Your pages save to: {path_info.website_root}/
    ➡️  ForgeWeb excluded via .gitignore
 
-🌐 URLs:
-   Admin Dashboard: http://{host}:{port}/admin/
-   Your Website:    http://{host}:{port}/
+🌐 Admin Dashboard:
+   http://{host}:{port}/admin/
    
-💡 Quick Start:
-   1. Choose a design system (auto-prompts on first visit)
-   2. Create pages and articles
-   3. Files save to website/ directory
-   4. Commit and push to GitHub
-   5. Enable GitHub Pages → Deploy from /website folder
+💡 First Steps:
+   1. Open the admin dashboard above
+   2. Choose a design system (auto-prompts)
+   3. Your homepage will be auto-generated
+   4. Then preview at: http://{host}:{port}/
+   
+📚 Documentation:
+   • Quick Start: ForgeWeb/QUICK-START.md
+   • Setup Guide: ForgeWeb/SETUP-REPO.md
    
 Press Ctrl+C to stop the server.
         """)
