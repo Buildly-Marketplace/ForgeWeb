@@ -16,6 +16,15 @@ import threading
 import argparse
 from pathlib import Path
 
+# Import database
+try:
+    from database import ForgeWebDB
+    db = ForgeWebDB()
+    print("✓ Database connected")
+except Exception as e:
+    print(f"⚠️  Database initialization failed: {e}")
+    db = None
+
 try:
     import requests
 except ImportError:
@@ -82,6 +91,8 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
             self.handle_save_file()
         elif self.path == '/api/setup-site' or self.path == '/api/site-setup':
             self.handle_setup_site()
+        elif self.path == '/api/design-system':
+            self.handle_design_system()
         elif self.path == '/api/branding':
             self.handle_branding_request()
         elif self.path == '/api/import-html':
@@ -235,6 +246,52 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
             
         except Exception as e:
             print(f"✗ Setup error: {e}")
+            self.send_json_error(500, str(e))
+
+    def handle_design_system(self):
+        """Handle design system configuration"""
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            system_name = data.get('system', 'tailwind')
+            cdn_urls = data.get('cdn_urls', [])
+            body_classes = data.get('body_classes', '')
+            custom_css = data.get('custom_css', '')
+            
+            # Save to database if available
+            if db:
+                db.set_design_config(system_name, cdn_urls, body_classes, custom_css)
+            
+            # Also save to JSON for backward compatibility
+            config_path = os.path.join(self.admin_dir, 'site-config.json')
+            config = {}
+            if os.path.exists(config_path):
+                with open(config_path, 'r') as f:
+                    config = json.load(f)
+            
+            config['design'] = {
+                'system': system_name,
+                'cdn_urls': cdn_urls,
+                'custom_css': custom_css,
+                'body_classes': body_classes
+            }
+            
+            with open(config_path, 'w') as f:
+                json.dump(config, f, indent=2)
+            
+            response = {
+                'success': True,
+                'message': f'Design system set to {system_name}',
+                'design': config['design']
+            }
+            
+            self.send_json_response(response)
+            print(f"✓ Design system configured: {system_name}")
+            
+        except Exception as e:
+            print(f"✗ Design system error: {e}")
             self.send_json_error(500, str(e))
 
     def handle_api_get_request(self):

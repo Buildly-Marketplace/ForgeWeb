@@ -6,6 +6,8 @@ ForgeWeb is a comprehensive static site management solution that combines the po
 
 ![ForgeWeb Logo](assets/forgeweb-logo-512.png)
 
+> **👉 New to ForgeWeb?** Check out [QUICKSTART.md](QUICKSTART.md) for a super simple 3-step setup guide!
+
 ## 🚀 Features
 
 ### 🤖 AI-Powered Content Creation
@@ -35,29 +37,82 @@ ForgeWeb is a comprehensive static site management solution that combines the po
 ## 📋 Quick Start
 
 ### Prerequisites
-- Python 3.8 or higher
-- Git (for deployment)
-- Modern web browser
+- **Python 3.8 or higher** - [Download here](https://www.python.org/downloads/)
+- **Web browser** (Chrome, Firefox, Safari, or Edge)
+- That's it! 🎉
 
-### Installation
+### Get Started in 30 Seconds
 
-1. **Clone or Download ForgeWeb**
+1. **Download or Clone ForgeWeb**
    ```bash
    git clone https://github.com/buildlyio/forgeweb.git
    cd forgeweb
    ```
 
-2. **Start the Local Admin**
+2. **Run the Startup Wizard**
+   
+   **On Linux/Mac:**
    ```bash
-   cd admin
-   python file-api.py
+   ./start.sh
    ```
+   
+   **On Windows:**
+   ```cmd
+   start.bat
+   ```
+   
+   That's all! The script will:
+   - ✅ Set up a virtual environment
+   - ✅ Install required packages
+   - ✅ Start the local server
+   - ✅ Open at `http://localhost:8000/admin/`
 
-3. **Open Admin Interface**
-   - Navigate to `http://localhost:8000/admin/`
-   - Start creating your site!
+3. **Start Building Your Site!**
+   - Your browser will guide you through the admin interface
+   - All changes are saved automatically
+   - Press `Ctrl+C` to stop the server when done
 
-For detailed installation instructions, see [INSTALL.md](INSTALL.md).
+### Restart the Server
+
+Just run the start script again - it remembers everything!
+
+- Linux/Mac: `./start.sh`
+- Windows: `start.bat`
+
+For detailed installation instructions and troubleshooting, see [INSTALL.md](INSTALL.md).
+
+## 📂 File Structure & Deployment
+
+ForgeWeb creates files ready for GitHub Pages deployment:
+
+```
+ForgeWeb/
+├── admin/              # Admin interface (local only, not deployed)
+│   ├── index.html     # Dashboard
+│   ├── editor.html    # Content editor
+│   ├── forgeweb.db    # SQLite database (settings, metadata)
+│   ├── site-config.json  # Site configuration (backward compatibility)
+│   └── database.py    # Database manager
+│
+├── index.html         # YOUR SITE'S HOMEPAGE (deployed)
+├── 404.html           # Error page (deployed)
+├── articles/          # Your blog posts (deployed)
+├── assets/            # CSS, images, JS (deployed)
+│   ├── css/
+│   ├── images/
+│   └── js/
+│
+└── templates/         # Page templates (local only)
+```
+
+**Important:** 
+- Content you create is saved to the **root directory** (where index.html lives)
+- The `admin/` folder stays local - it's your control panel
+- **Settings are stored in SQLite database** (`admin/forgeweb.db`) - never deployed
+- Your chosen design system, site config, and metadata are in the database
+- Everything else gets deployed to GitHub Pages
+
+📖 **See [DEPLOYMENT.md](DEPLOYMENT.md) for complete deployment instructions and best practices.**
 
 ## 🎯 Use Cases
 

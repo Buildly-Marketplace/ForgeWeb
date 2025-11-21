@@ -7,6 +7,14 @@
     "generator": "ForgeWeb v0.5.0",
     "support_url": "https://docs.buildly.io/forgeweb"
   },
+  "design": {
+    "system": "tailwind",
+    "cdn_urls": [
+      "https://cdn.tailwindcss.com"
+    ],
+    "custom_css": "",
+    "body_classes": "bg-gray-50"
+  },
   "content": {
     "site_type": "blog",
     "include_about": true,

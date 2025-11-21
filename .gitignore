@@ -1,10 +1,24 @@
+# ForgeWeb .gitignore
+# This file tells Git which files NOT to track or deploy to GitHub Pages
+
+# ==========================================
+# LOCAL DEVELOPMENT (Do not deploy these)
+# ==========================================
+
+# Database files (local admin database)
+*.db
+*.sqlite
+*.sqlite3
+admin/forgeweb.db
+admin/*.db
+
 # Python Virtual Environment
 venv/
 env/
 .venv/
 .env/
 
-# Environment Variables
+# Environment Variables and Secrets
 .env
 .env.local
 .env.production
@@ -38,8 +52,6 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -255,11 +267,33 @@ cython_debug/
 .pypirc
 
 # Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
 .cursorignore
 .cursorindexingignore
+
+# ==========================================
+# OPTIONAL: Keep Admin Completely Local
+# ==========================================
+# Uncomment these lines if you want to exclude
+# admin interface from Git (keep it local only):
+#
+# admin/
+# templates/
+# start.sh
+# start.bat
+# setup-dev.sh
+
+# ==========================================
+# WHAT GETS DEPLOYED (These ARE tracked)
+# ==========================================
+# The following files/folders WILL be deployed to GitHub Pages:
+# - *.html (all HTML files in root directory)
+# - assets/ (CSS, images, JavaScript)
+# - articles/ or blog/ (your blog posts)
+# - Any other folders you create for content
+# - 404.html (custom error page)
+# - CNAME (if using custom domain)
+#
+# See DEPLOYMENT.md for complete deployment guide
 
 # Marimo
 marimo/_static/

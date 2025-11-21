@@ -24,57 +24,154 @@ Before installing ForgeWeb, ensure you have:
 
 ## 🚀 Quick Installation
 
-### Method 1: Download Release (Recommended)
+### The Easy Way (Recommended for Everyone!)
+
+**ForgeWeb is designed to be super simple. You just need Python installed.**
 
 1. **Download ForgeWeb**
-   - Go to [ForgeWeb Releases](https://github.com/buildlyio/forgeweb/releases)
-   - Download the latest `forgeweb-v0.5.0.zip`
-   - Extract to your desired location
+   - Option A: Download the [latest release](https://github.com/buildlyio/forgeweb/releases)
+   - Option B: Clone with git:
+     ```bash
+     git clone https://github.com/buildlyio/forgeweb.git
+     cd forgeweb
+     ```
 
-2. **Start ForgeWeb**
+2. **Run the Startup Script**
+   
+   **On Linux/Mac:**
    ```bash
-   cd forgeweb
+   ./start.sh
+   ```
+   
+   **On Windows:**
+   ```cmd
+   start.bat
+   ```
+   
+   The script does everything automatically:
+   - Creates an isolated Python environment
+   - Installs required packages
+   - Creates necessary folders
+   - Starts the server
+   
+3. **Open Your Browser**
+   - Go to `http://localhost:8000/admin/`
+   - Start building your website!
+
+### Stopping and Restarting
+
+- **To stop**: Press `Ctrl+C` in the terminal
+- **To restart**: 
+  - Linux/Mac: Run `./start.sh` again
+  - Windows: Run `start.bat` again
+
+That's it! The script remembers your setup and will work every time.
+
+---
+
+## 🔧 Manual Installation (Advanced Users)
+
+If you prefer to set things up manually:
+
+1. **Create a Virtual Environment**
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+2. **Install Dependencies**
+   ```bash
+   pip install requests python-dotenv pillow
+   ```
+
+3. **Start the Server**
+   ```bash
    cd admin
-   python file-api.py
+   python3 file-api.py
    ```
 
-3. **Open Admin Interface**
-   - Open your browser to `http://localhost:8000/admin/`
-   - You should see the ForgeWeb dashboard
+---
 
-### Method 2: Clone from GitHub
+## 📋 Detailed System Requirements
 
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/buildlyio/forgeweb.git
-   cd forgeweb
-   ```
+### Required Software
+- **Python 3.8 or higher** - [Download Python](https://python.org/downloads/)
+  - Windows: Download from python.org
+  - macOS: `brew install python3` or download from python.org
+  - Linux: `sudo apt install python3 python3-pip python3-venv` (Ubuntu/Debian)
+- **Web browser** (Chrome, Firefox, Safari, Edge - any modern browser)
 
-2. **Start the Admin Server**
-   ```bash
-   cd admin
-   python file-api.py
-   ```
+### Optional Software
+- **Git** - Only needed if you want to deploy to GitHub Pages
+  - [Install Git](https://git-scm.com/downloads)
+- **GitHub account** - For deploying your site online
 
-3. **Access ForgeWeb**
-   - Navigate to `http://localhost:8000/admin/`
+### System Requirements
+- **CPU**: Any modern processor (1+ cores)
+- **RAM**: 1GB+ available
+- **Storage**: 500MB+ free space
+- **Operating System**: 
+  - Windows 10 or later
+  - macOS 10.15 (Catalina) or later
+  - Linux (Ubuntu 18.04+, or any modern distribution)
 
-## 🔧 Detailed Setup
+---
 
-### 1. Verify Python Installation
+## ❓ Troubleshooting
 
-Check your Python version:
+### "Python 3 is not installed"
+Install Python from [python.org/downloads](https://www.python.org/downloads/). Make sure to check "Add Python to PATH" during installation on Windows.
+
+### "Permission denied" when running ./start.sh
+Make the script executable:
 ```bash
-python --version
-# or
-python3 --version
+chmod +x start.sh
+./start.sh
 ```
 
-You should see Python 3.8.0 or higher. If not, install Python from [python.org](https://python.org).
+### "Port 8000 is already in use"
+The script will detect this and offer to restart the server. Just answer 'y' when prompted.
 
-### 2. Configure ForgeWeb
+### Cannot access http://localhost:8000/admin/
+1. Check if the server is running (you should see messages in the terminal)
+2. Try http://127.0.0.1:8000/admin/ instead
+3. Make sure no firewall is blocking port 8000
 
-#### Site Configuration
+### Still having issues?
+- Check that Python 3.8+ is installed: `python3 --version`
+- Check the terminal for error messages
+- Make sure you're in the ForgeWeb directory when running `./start.sh`
+
+---
+
+## 🎯 Next Steps
+
+Once ForgeWeb is running:
+
+1. **Create Your First Page**
+   - Go to the admin interface
+   - Click "Pages" → "New Page"
+   - Use the visual editor to build your content
+
+2. **Configure Your Site**
+   - Click "Settings" to customize:
+     - Site name and description
+     - Colors and theme
+     - Navigation menu
+     - Social media links
+
+3. **Deploy to GitHub Pages** (Optional)
+   - Set up a GitHub repository
+   - Configure GitHub settings in the admin
+   - Click "Deploy" to publish your site online
+
+For more help, see the main [README.md](README.md).
+
+---
+
+## 🔧 Detailed Setup and Configuration
+
+### Optional: Site Configuration
 Edit `admin/site-config.json` to customize your site:
 
 ```json
@@ -123,7 +220,7 @@ To enable AI features, add your API keys to the admin settings:
    - **Local LLM**: Configure local endpoint
    - **Custom**: Add custom API endpoint
 
-### 3. Create Your First Content
+### Creating Your First Content
 
 #### Create an Article
 1. In the admin dashboard, click **Article Editor**
