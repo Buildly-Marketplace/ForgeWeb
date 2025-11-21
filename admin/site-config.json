@@ -1,28 +1,28 @@
 {
   "site": {
-    "name": "My ForgeWeb Site",
-    "url": "https://username.github.io/repository",
-    "description": "A modern website built with ForgeWeb AI-powered site generator",
-    "author": "Website Owner",
-    "generator": "ForgeWeb v0.5.0",
+    "name": "Build a Startup in a Day",
+    "url": "https://buildly-release-management.github.io/startupinaday",
+    "description": "A guide, and education site for building software startups.  A collaboration with Korgi and Buildly",
+    "author": "Buildly",
+    "generator": "ForgeWeb v1.0.0",
     "support_url": "https://docs.buildly.io/forgeweb"
   },
   "design": {
-    "system": "daisyui",
+    "system": "foundation",
     "cdn_urls": [
-      "https://cdn.jsdelivr.net/npm/daisyui@4.4.19/dist/full.min.css",
-      "https://cdn.tailwindcss.com"
+      "https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/css/foundation.min.css",
+      "https://cdn.jsdelivr.net/npm/foundation-sites@6.8.1/dist/js/foundation.min.js"
     ],
     "custom_css": "",
     "body_classes": ""
   },
   "content": {
-    "site_type": "blog",
+    "site_type": "business",
     "include_about": true,
     "include_contact": true,
     "include_blog": true,
     "include_portfolio": false,
-    "include_services": false,
+    "include_services": true,
     "include_sample_content": true
   },
   "branding": {
@@ -90,8 +90,8 @@
     "debugMode": false
   },
   "github": {
-    "username": "",
-    "repository": "",
+    "username": "buildly-release-management",
+    "repository": "startupinaday",
     "pages_enabled": true
   }
 }

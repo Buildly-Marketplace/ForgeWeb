@@ -1652,7 +1652,7 @@ All code uses ${context.framework} and will be inserted directly into your edito
                             'Content-Type': 'application/json',
                         },
                         body: JSON.stringify({
-                            filename: this.currentFile,
+                            path: this.currentFile,
                             content: html
                         })
                     });
