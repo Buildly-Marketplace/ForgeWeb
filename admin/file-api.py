@@ -59,10 +59,13 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
             lstrip_blocks=True
         )
         repo_root = os.path.dirname(forge_web_dir)
-        # Website files go in website/ subdirectory of the repo
-        self.website_root = os.path.join(repo_root, 'website')
-        
-        # Create website directory structure if it doesn't exist
+
+        # GitHub Pages branch deploys expect site content in `docs/`.
+        # Always use `docs/` as the website root (create it if missing).
+        self.website_root = os.path.join(repo_root, 'docs')
+        os.makedirs(self.website_root, exist_ok=True)
+
+        # Create expected docs subdirectories if they are missing
         os.makedirs(os.path.join(self.website_root, 'articles'), exist_ok=True)
         os.makedirs(os.path.join(self.website_root, 'assets', 'css'), exist_ok=True)
         os.makedirs(os.path.join(self.website_root, 'assets', 'images'), exist_ok=True)
@@ -79,7 +82,7 @@ class ForgeWebHandler(BaseHTTPRequestHandler):
         
         if not os.path.exists(gitignore_path):
             gitignore_content = """# ForgeWeb GitHub Pages Repository
-# Only the website/ folder gets deployed to GitHub Pages
+# Only the docs/ folder gets deployed to GitHub Pages
 
 # ForgeWeb admin tools (not deployed)
 ForgeWeb/
@@ -1880,7 +1883,8 @@ def start_forgeweb_server(port=8000, host='localhost'):
                 self.admin_dir = os.path.dirname(os.path.abspath(__file__))
                 forge_web_dir = os.path.dirname(self.admin_dir)
                 repo_root = os.path.dirname(forge_web_dir)
-                self.website_root = os.path.join(repo_root, 'website')
+                # Always report docs/ as the website root (GitHub Pages branch deploy)
+                self.website_root = os.path.join(repo_root, 'docs')
         
         path_info = PathHandler()
         repo_root = os.path.dirname(os.path.dirname(path_info.admin_dir))
