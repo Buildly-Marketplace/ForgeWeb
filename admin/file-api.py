@@ -335,14 +335,18 @@ Thumbs.db
         return context
 
     def serve_site_file(self, path):
-        """Serve generated site files"""
+        """Serve generated site files, mapping directory requests to index.html"""
         if not path or path == '/':
             path = 'index.html'
         elif path.startswith('/'):
             path = path[1:]
-            
+
+        # If path ends with '/', treat as directory and append 'index.html'
+        if path.endswith('/') or (os.path.isdir(os.path.join(self.website_root, path))):
+            path = os.path.join(path, 'index.html')
+
         full_path = os.path.join(self.website_root, path)
-        
+
         if os.path.exists(full_path) and os.path.isfile(full_path):
             self.serve_file(full_path)
         else:
@@ -522,6 +526,13 @@ Thumbs.db
                 
                 nav_items = db.get_navigation_items(active_only=False)
                 self.send_json_response({'navigation': nav_items})
+            elif self.path == '/api/articles-list':
+                # Get all articles
+                if not db:
+                    self.send_json_error(500, 'Database not available')
+                    return
+                articles = db.get_all_articles()
+                self.send_json_response({'articles': articles})
             elif self.path == '/api/branding':
                 branding_config = self.load_branding_config()
                 self.send_json_response(branding_config)

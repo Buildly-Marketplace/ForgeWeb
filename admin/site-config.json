@@ -1,9 +1,9 @@
 {
   "site": {
-    "name": "Build a Startup in a Day",
-    "url": "https://buildly-release-management.github.io/startupinaday",
-    "description": "Brought to you by Buildly and Korgi",
-    "author": "Buildly",
+    "name": "NullRecords",
+    "url": "https://nullrecords.github.io/nullrecords-website",
+    "description": "NullRecords Art, Music, Publishing and more.",
+    "author": "NullRecords",
     "generator": "ForgeWeb v1.0.0",
     "support_url": "https://docs.buildly.io/forgeweb"
   },
@@ -21,7 +21,7 @@
     "include_contact": true,
     "include_blog": true,
     "include_portfolio": false,
-    "include_services": true,
+    "include_services": false,
     "include_sample_content": true
   },
   "branding": {
@@ -89,8 +89,8 @@
     "debugMode": false
   },
   "github": {
-    "username": "buildly-release-management",
-    "repo": "startupinaday",
+    "username": "nullrecords",
+    "repo": "nullrecords-website",
     "pages_enabled": true
   }
 }
