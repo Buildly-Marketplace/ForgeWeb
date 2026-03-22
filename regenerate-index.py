@@ -118,3 +118,37 @@ print(f"  - Pages: Home" +
       (' + News' if content_config.get('include_news') else '') +
       (' + About' if content_config.get('include_about') else '') +
       (' + Contact' if content_config.get('include_contact') else ''))
+
+# --- Generate About page ---
+if content_config.get('include_about'):
+    about_template_path = os.path.join(templates_dir, 'about-content.html')
+    if os.path.exists(about_template_path):
+        with open(about_template_path, 'r', encoding='utf-8') as f:
+            about_content = f.read()
+        about_replacements = dict(replacements)
+        about_replacements['{{MAIN_CONTENT}}'] = about_content
+        about_html = base_template
+        for placeholder, value in about_replacements.items():
+            about_html = about_html.replace(placeholder, value)
+        about_html = re.sub(r'\{\{#LOGO_PATH\}\}.*?\{\{/LOGO_PATH\}\}', '', about_html, flags=re.DOTALL)
+        about_path = os.path.join(website_root, 'about.html')
+        with open(about_path, 'w', encoding='utf-8') as f:
+            f.write(about_html)
+        print(f"✓ Generated {about_path}")
+
+# --- Generate Contact page ---
+if content_config.get('include_contact'):
+    contact_template_path = os.path.join(templates_dir, 'contact-content.html')
+    if os.path.exists(contact_template_path):
+        with open(contact_template_path, 'r', encoding='utf-8') as f:
+            contact_content = f.read()
+        contact_replacements = dict(replacements)
+        contact_replacements['{{MAIN_CONTENT}}'] = contact_content
+        contact_html = base_template
+        for placeholder, value in contact_replacements.items():
+            contact_html = contact_html.replace(placeholder, value)
+        contact_html = re.sub(r'\{\{#LOGO_PATH\}\}.*?\{\{/LOGO_PATH\}\}', '', contact_html, flags=re.DOTALL)
+        contact_path = os.path.join(website_root, 'contact.html')
+        with open(contact_path, 'w', encoding='utf-8') as f:
+            f.write(contact_html)
+        print(f"✓ Generated {contact_path}")
