@@ -220,6 +220,12 @@ Thumbs.db
         """Handle POST requests for API endpoints"""
         if self.path == '/api/save-file':
             self.handle_save_file()
+        elif self.path == '/api/create-preview':
+            self.handle_create_preview()
+        elif self.path == '/api/upload':
+            self.handle_upload()
+        elif self.path == '/api/ai-generate':
+            self.handle_ai_generate()
         elif self.path == '/api/setup-site' or self.path == '/api/site-setup':
             self.handle_setup_site()
         elif self.path == '/api/design-system':
@@ -293,6 +299,7 @@ Thumbs.db
             'editor.html': 'editor.html',
             'articles-manager.html': 'articles-manager.html',
             'html-import.html': 'html-import.html',
+            'media-library.html': 'media-library.html',
             'settings.html': 'settings.html',
             'social.html': 'social.html'
         }
@@ -318,19 +325,57 @@ Thumbs.db
         context = {
             'site_name': 'ForgeWeb',
             'version': '2.0',
-            'current_year': datetime.now().year
+            'current_year': datetime.now().year,
+            'page_count': 0,
+            'article_count': 0,
+            'nav_count': 0,
+            'branding': {}
         }
         
-        # Add site config if available
+        # Add site config and counts if available
         if db:
             # Load common site settings
             site_name = db.get_site_config('site_name')
             if site_name:
                 context['site_name'] = site_name
             
+            site_config = db.get_site_config('site')
+            if isinstance(site_config, dict):
+                context['site_name'] = site_config.get('name', context['site_name'])
+                context['site_url'] = site_config.get('url', '')
+            
             site_url = db.get_site_config('site_url')
             if site_url:
                 context['site_url'] = site_url
+            
+            # Load branding for templates
+            try:
+                branding_data = db.get_site_config('branding')
+                if isinstance(branding_data, dict):
+                    context['branding'] = {
+                        'primary_color': branding_data.get('primaryColor', ''),
+                        'secondary_color': branding_data.get('secondaryColor', ''),
+                        'accent_color': branding_data.get('accentColor', ''),
+                    }
+            except Exception:
+                pass
+            
+            # Load counts for dashboard
+            try:
+                pages = db.get_all_pages()
+                context['page_count'] = len(pages) if pages else 0
+            except Exception:
+                pass
+            try:
+                articles = db.get_all_articles()
+                context['article_count'] = len(articles) if articles else 0
+            except Exception:
+                pass
+            try:
+                nav_items = db.get_navigation_items(active_only=False)
+                context['nav_count'] = len(nav_items) if nav_items else 0
+            except Exception:
+                pass
         
         return context
 
@@ -400,6 +445,265 @@ Thumbs.db
             '.xml': 'application/xml',
         }
         return content_types.get(ext, 'application/octet-stream')
+
+    def handle_create_preview(self):
+        """Handle preview creation - writes temp HTML to a preview file"""
+        try:
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+
+            content = data.get('content', '')
+            filename = data.get('filename', 'preview.html')
+
+            # Write to a temp preview file in the website root
+            preview_dir = os.path.join(self.website_root, '_preview')
+            os.makedirs(preview_dir, exist_ok=True)
+            preview_file = os.path.join(preview_dir, 'index.html')
+
+            with open(preview_file, 'w', encoding='utf-8') as f:
+                f.write(content)
+
+            self.send_json_response({
+                'success': True,
+                'previewFile': '_preview/index.html'
+            })
+        except Exception as e:
+            print(f'Preview error: {e}')
+            self.send_json_error(500, str(e))
+
+    # ── File Upload ────────────────────────────────────────
+
+    def handle_upload(self):
+        """Handle multipart file upload to assets/uploads/"""
+        import cgi
+        import io
+        try:
+            content_type = self.headers.get('Content-Type', '')
+            if 'multipart/form-data' not in content_type:
+                self.send_json_error(400, 'Expected multipart/form-data')
+                return
+
+            content_length = int(self.headers['Content-Length'])
+            body = self.rfile.read(content_length)
+
+            # Parse multipart data
+            boundary = content_type.split('boundary=')[-1].encode()
+            environ = {
+                'REQUEST_METHOD': 'POST',
+                'CONTENT_TYPE': content_type,
+                'CONTENT_LENGTH': str(content_length),
+            }
+            fs = cgi.FieldStorage(
+                fp=io.BytesIO(body),
+                environ=environ,
+                keep_blank_values=True,
+            )
+
+            file_item = fs['file'] if 'file' in fs else None
+            if file_item is None or not file_item.filename:
+                self.send_json_error(400, 'No file provided')
+                return
+
+            # Sanitize filename
+            original = os.path.basename(file_item.filename)
+            safe_name = original.replace(' ', '_')
+            for ch in ['..', '/', '\\', '\x00']:
+                safe_name = safe_name.replace(ch, '')
+
+            # Allowed extensions
+            allowed_ext = {'.png', '.jpg', '.jpeg', '.gif', '.svg', '.webp',
+                           '.ico', '.mp3', '.mp4', '.pdf', '.css', '.js', '.woff', '.woff2'}
+            ext = os.path.splitext(safe_name)[1].lower()
+            if ext not in allowed_ext:
+                self.send_json_error(400, f'File type {ext} not allowed')
+                return
+
+            upload_dir = os.path.join(self.website_root, 'assets', 'uploads')
+            os.makedirs(upload_dir, exist_ok=True)
+
+            dest = os.path.join(upload_dir, safe_name)
+            # Avoid overwriting — append timestamp if exists
+            if os.path.exists(dest):
+                stem, extension = os.path.splitext(safe_name)
+                safe_name = f"{stem}_{int(datetime.now().timestamp())}{extension}"
+                dest = os.path.join(upload_dir, safe_name)
+
+            file_data = file_item.file.read()
+            with open(dest, 'wb') as f:
+                f.write(file_data)
+
+            rel_path = f'assets/uploads/{safe_name}'
+
+            # Track in database
+            if db:
+                try:
+                    mime = self.guess_type_for_ext(ext)
+                    db.execute(
+                        'INSERT INTO media (filename, file_path, mime_type, file_size) VALUES (?, ?, ?, ?)',
+                        (safe_name, rel_path, mime, len(file_data))
+                    )
+                except Exception:
+                    pass
+
+            self.send_json_response({
+                'success': True,
+                'filename': safe_name,
+                'path': rel_path,
+                'url': f'/{rel_path}',
+                'size': len(file_data)
+            })
+            print(f"✓ Uploaded: {rel_path} ({len(file_data)} bytes)")
+
+        except Exception as e:
+            print(f"✗ Upload error: {e}")
+            self.send_json_error(500, str(e))
+
+    def guess_type_for_ext(self, ext):
+        types = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                 '.gif': 'image/gif', '.svg': 'image/svg+xml', '.webp': 'image/webp',
+                 '.ico': 'image/x-icon', '.mp3': 'audio/mpeg', '.mp4': 'video/mp4',
+                 '.pdf': 'application/pdf', '.css': 'text/css', '.js': 'application/javascript',
+                 '.woff': 'font/woff', '.woff2': 'font/woff2'}
+        return types.get(ext, 'application/octet-stream')
+
+    # ── AI Generation ──────────────────────────────────────
+
+    def _get_ai_provider_config(self):
+        """Read AI provider config from the settings stored in localStorage-style JSON or DB."""
+        config = {'providers': {}, 'active': None}
+        if db:
+            try:
+                row = db.get_site_config('ai_providers')
+                if row:
+                    config['providers'] = row
+                    for name, prov in row.items():
+                        if prov.get('enabled'):
+                            config['active'] = name
+                            break
+            except Exception:
+                pass
+        return config
+
+    def handle_ai_generate(self):
+        """Proxy prompt to configured AI provider and return result."""
+        try:
+            content_length = int(self.headers['Content-Length'])
+            data = json.loads(self.rfile.read(content_length).decode('utf-8'))
+
+            prompt = data.get('prompt', '')
+            context_html = data.get('context', '')
+            provider = data.get('provider', 'ollama')
+            endpoint = data.get('endpoint', '')
+            model = data.get('model', '')
+            api_key = data.get('apiKey', '')
+
+            if not prompt:
+                self.send_json_error(400, 'Missing prompt')
+                return
+
+            system_msg = (
+                "You are an expert web developer assistant embedded in a page editor. "
+                "The user is editing an HTML page. Return ONLY the HTML code they asked for, "
+                "no markdown fences, no explanations — just the raw HTML snippet. "
+                "Use the same CSS framework/classes present in the current page."
+            )
+            if context_html:
+                system_msg += f"\n\nCurrent page HTML (truncated):\n{context_html[:3000]}"
+
+            result = None
+
+            if provider == 'ollama':
+                ep = endpoint or 'http://localhost:11434'
+                mdl = model or 'llama3'
+                result = self._call_ollama(ep, mdl, system_msg, prompt)
+            elif provider == 'openai':
+                ep = endpoint or 'https://api.openai.com/v1'
+                mdl = model or 'gpt-3.5-turbo'
+                if not api_key:
+                    self.send_json_error(400, 'OpenAI API key not configured')
+                    return
+                result = self._call_openai(ep, mdl, api_key, system_msg, prompt)
+            elif provider == 'gemini':
+                mdl = model or 'gemini-pro'
+                if not api_key:
+                    self.send_json_error(400, 'Gemini API key not configured')
+                    return
+                result = self._call_gemini(api_key, mdl, system_msg, prompt)
+            else:
+                self.send_json_error(400, f'Unknown provider: {provider}')
+                return
+
+            if result is None:
+                self.send_json_error(502, 'AI provider returned no response')
+                return
+
+            self.send_json_response({'success': True, 'code': result})
+
+        except Exception as e:
+            print(f"AI generate error: {e}")
+            self.send_json_error(500, str(e))
+
+    def _call_ollama(self, endpoint, model, system_msg, prompt):
+        """Call Ollama /api/chat endpoint."""
+        import urllib.request
+        url = f"{endpoint.rstrip('/')}/api/chat"
+        payload = json.dumps({
+            'model': model,
+            'messages': [
+                {'role': 'system', 'content': system_msg},
+                {'role': 'user', 'content': prompt}
+            ],
+            'stream': False
+        }).encode()
+        req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                body = json.loads(resp.read().decode())
+                return body.get('message', {}).get('content', '')
+        except Exception as e:
+            print(f"Ollama error: {e}")
+            return None
+
+    def _call_openai(self, endpoint, model, api_key, system_msg, prompt):
+        """Call OpenAI-compatible /chat/completions endpoint."""
+        import urllib.request
+        url = f"{endpoint.rstrip('/')}/chat/completions"
+        payload = json.dumps({
+            'model': model,
+            'messages': [
+                {'role': 'system', 'content': system_msg},
+                {'role': 'user', 'content': prompt}
+            ],
+            'temperature': 0.7
+        }).encode()
+        req = urllib.request.Request(url, data=payload, headers={
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}'
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                body = json.loads(resp.read().decode())
+                return body['choices'][0]['message']['content']
+        except Exception as e:
+            print(f"OpenAI error: {e}")
+            return None
+
+    def _call_gemini(self, api_key, model, system_msg, prompt):
+        """Call Google Gemini generateContent endpoint."""
+        import urllib.request
+        url = f"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={api_key}"
+        payload = json.dumps({
+            'contents': [{'parts': [{'text': f"{system_msg}\n\n{prompt}"}]}]
+        }).encode()
+        req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                body = json.loads(resp.read().decode())
+                return body['candidates'][0]['content']['parts'][0]['text']
+        except Exception as e:
+            print(f"Gemini error: {e}")
+            return None
 
     def handle_save_file(self):
         """Handle file save requests"""
@@ -646,6 +950,26 @@ Thumbs.db
                 # Return app settings
                 settings = self.load_settings()
                 self.send_json_response(settings)
+            
+            elif self.path == '/api/media':
+                # List uploaded media files
+                media_dir = os.path.join(self.website_root, 'assets', 'uploads')
+                files = []
+                if os.path.isdir(media_dir):
+                    for fname in sorted(os.listdir(media_dir)):
+                        fpath = os.path.join(media_dir, fname)
+                        if os.path.isfile(fpath):
+                            files.append({
+                                'filename': fname,
+                                'path': f'assets/uploads/{fname}',
+                                'url': f'/assets/uploads/{fname}',
+                                'size': os.path.getsize(fpath)
+                            })
+                self.send_json_response({'files': files})
+            
+            elif self.path == '/api/ai-status':
+                # Return configured AI providers and their status
+                self.send_json_response(self._get_ai_provider_config())
             
             else:
                 endpoint = self.path.replace('/api/', '')
@@ -1309,10 +1633,38 @@ function toggleMobileMenu() {{
 }}
 
 /**
+ * Build navigation HTML from SITE_CONFIG and inject into the page.
+ * Targets elements with id="site-nav" or the first <nav> on the page.
+ */
+function injectNavigation() {{
+    const nav = SITE_CONFIG.navigation;
+    if (!nav || nav.length === 0) return;
+
+    const container = document.getElementById('site-nav')
+                   || document.querySelector('nav ul')
+                   || document.querySelector('nav');
+    if (!container) return;
+
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const isList = container.tagName === 'UL';
+
+    const links = nav.map(item => {{
+        const isActive = item.url === currentPage;
+        const target = item.target ? ` target="${{item.target}}"` : '';
+        const cls = (item['class'] || '') + (isActive ? ' active' : '');
+        const a = `<a href="${{item.url}}" class="nav-link${{cls ? ' ' + cls.trim() : ''}}"${{target}}>${{item.title}}</a>`;
+        return isList ? `<li>${{a}}</li>` : a;
+    }}).join('\\n');
+
+    container.innerHTML = links;
+}}
+
+/**
  * Initialize page
  */
 document.addEventListener('DOMContentLoaded', () => {{
     initNavigation();
+    injectNavigation();
     
     // Update copyright year if element exists
     const yearElement = document.getElementById('current-year');

@@ -13,10 +13,10 @@ def slugify(title):
 
 NAV_ITEMS = [
     {"title": "Home", "url": "/", "order": 1, "file": "docs/index.html"},
-    {"title": "News", "url": "/news/", "order": 2, "file": "docs/news/index.html"},
-    {"title": "Artists", "url": "/artists.html", "order": 3, "file": "docs/artists.html"},
-    {"title": "Store", "url": "/store/index.html", "order": 4, "file": "docs/store/index.html"},
-    {"title": "Unsubscribe", "url": "/unsubscribe.html", "order": 5, "file": "docs/unsubscribe.html"}
+    {"title": "Store", "url": "/store/", "order": 2, "file": "docs/store/index.html"},
+    {"title": "News", "url": "/news/", "order": 3, "file": "docs/news/index.html"},
+    {"title": "About", "url": "/about.html", "order": 4, "file": "docs/about.html"},
+    {"title": "Contact", "url": "/contact.html", "order": 5, "file": "docs/contact.html"}
 ]
 
 def get_db():

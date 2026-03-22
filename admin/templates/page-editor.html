@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Buildly Page Editor - Full Page HTML Editor{% endblock %}
+{% block title %}Page Editor - ForgeWeb Admin{% endblock %}
 
 {% block extra_head %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -10,6 +10,41 @@
 .CodeMirror {
             height: 100% !important;
         }
+/* Resizable panels */
+.resize-handle {
+    width: 6px;
+    cursor: col-resize;
+    background: #e5e7eb;
+    transition: background 0.15s;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+}
+.resize-handle:hover,
+.resize-handle.active {
+    background: #3b82f6;
+}
+.resize-handle::after {
+    content: '⋮';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #9ca3af;
+    font-size: 10px;
+}
+.resize-handle:hover::after,
+.resize-handle.active::after {
+    color: #fff;
+}
+body.resizing {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+body.resizing iframe,
+body.resizing .CodeMirror {
+    pointer-events: none !important;
+}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/xml/xml.min.js"></script>
@@ -28,14 +63,14 @@
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
-                    <h1 class="text-xl font-bold text-buildly-primary">Page Editor</h1>
+                    <h1 class="text-xl font-bold text-admin-primary">Page Editor</h1>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <button id="saveBtn" class="bg-buildly-primary text-white px-4 py-2 rounded-md hover:bg-buildly-secondary transition-colors">
+                    <button id="saveBtn" class="bg-admin-primary text-white px-4 py-2 rounded-md hover:bg-admin-secondary transition-colors">
                         Save Page
                     </button>
-                    <a href="editor.html" class="text-buildly-primary hover:text-buildly-secondary">Article Editor</a>
-                    <a href="articles-manager.html" class="text-buildly-primary hover:text-buildly-secondary">Articles Manager</a>
+                    <a href="editor.html" class="text-admin-primary hover:text-admin-secondary">Article Editor</a>
+                    <a href="articles-manager.html" class="text-admin-primary hover:text-admin-secondary">Articles Manager</a>
                 </div>
             </div>
         </div>
@@ -51,18 +86,59 @@
             
             <!-- AI Helper Panel -->
             <div class="flex-1 flex flex-col bg-white" id="aiHelperPanel">
-                <div class="bg-gradient-to-r from-buildly-primary to-buildly-secondary px-4 py-2 flex justify-between items-center border-t border-white border-opacity-20">
+                <div class="bg-gradient-to-r from-admin-primary to-admin-secondary px-4 py-2 flex justify-between items-center border-t border-white border-opacity-20">
                     <h2 class="font-semibold text-white flex items-center text-sm">
                         <span class="mr-2">🤖</span>
                         AI Helper
                     </h2>
-                    <button 
-                        id="popoutAiHelper" 
-                        class="text-white hover:text-gray-200 text-xs px-2 py-1 rounded hover:bg-white hover:bg-opacity-20 transition-colors"
-                        title="Pop out AI Helper (Coming Soon)"
-                    >
-                        ↗️ Pop Out
-                    </button>
+                    <div class="flex items-center space-x-1">
+                        <button
+                            id="toggleAiConfig"
+                            class="text-white hover:text-gray-200 text-xs px-2 py-1 rounded hover:bg-white hover:bg-opacity-20 transition-colors"
+                            title="Configure AI Provider"
+                        >⚙️</button>
+                        <button 
+                            id="popoutAiHelper" 
+                            class="text-white hover:text-gray-200 text-xs px-2 py-1 rounded hover:bg-white hover:bg-opacity-20 transition-colors"
+                            title="Open Settings Page"
+                            onclick="window.open('/admin/settings.html','_blank')"
+                        >
+                            ↗️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Provider Config (collapsible) -->
+                <div id="aiConfigPanel" class="hidden border-b border-gray-200 bg-gray-50 p-3 space-y-2 text-xs">
+                    <div>
+                        <label class="block font-medium text-gray-700 mb-1">Provider</label>
+                        <select id="aiProvider" class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
+                            <option value="ollama">Ollama (Local)</option>
+                            <option value="openai">OpenAI</option>
+                            <option value="gemini">Google Gemini</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 mb-1">Endpoint</label>
+                        <input id="aiEndpoint" type="text" class="w-full border border-gray-300 rounded px-2 py-1 text-xs" 
+                               placeholder="http://localhost:11434">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 mb-1">Model</label>
+                        <input id="aiModel" type="text" class="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                               placeholder="llama3">
+                    </div>
+                    <div>
+                        <label class="block font-medium text-gray-700 mb-1">API Key <span class="text-gray-400">(OpenAI/Gemini)</span></label>
+                        <input id="aiApiKey" type="password" class="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                               placeholder="sk-...">
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <button id="testAiConnection" class="bg-admin-primary text-white px-3 py-1 rounded text-xs hover:bg-admin-secondary">
+                            Test Connection
+                        </button>
+                        <span id="aiConfigStatus" class="text-gray-500">—</span>
+                    </div>
                 </div>
                 <div class="flex-1 flex flex-col" style="min-height: 0;">
                     <!-- Chat Messages -->
@@ -70,7 +146,7 @@
                         <div class="bg-blue-50 border border-blue-200 rounded-lg p-2">
                             <div class="text-xs text-blue-600 font-medium mb-1">AI Assistant</div>
                             <div class="text-xs text-gray-700">
-                                Hi! I can help with Buildly's design system:
+                                Hi! I can help with your site's design:
                                 <ul class="list-disc list-inside mt-1 text-xs space-y-0.5">
                                     <li>HTML structure</li>
                                     <li>CSS classes</li>
@@ -91,11 +167,11 @@
                                 type="text" 
                                 id="aiPrompt" 
                                 placeholder="Ask for help..."
-                                class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-buildly-primary"
+                                class="flex-1 border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:border-admin-primary"
                             >
                             <button 
                                 id="sendAiPrompt" 
-                                class="bg-buildly-primary text-white px-3 py-1 rounded text-xs hover:bg-buildly-secondary transition-colors"
+                                class="bg-admin-primary text-white px-3 py-1 rounded text-xs hover:bg-admin-secondary transition-colors"
                             >
                                 Send
                             </button>
@@ -117,21 +193,13 @@
         </div>
 
         <!-- Center Panel - HTML Editor -->
-        <div class="flex-1 bg-white border-r border-gray-200 flex flex-col">
+        <div id="editorPanel" class="bg-white border-r border-gray-200 flex flex-col" style="flex: 1 1 0%; min-width: 200px;">
             <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                 <h2 class="font-semibold text-gray-800">HTML Editor</h2>
                 <div class="flex items-center space-x-2">
                     <label class="text-sm text-gray-600">File:</label>
                     <select id="fileSelect" class="border border-gray-300 rounded px-2 py-1 text-sm">
-                        <option value="">Select a page to edit...</option>
-                        <option value="index.html">index.html (Homepage)</option>
-                        <option value="labs.html">labs.html (Labs Page)</option>
-                        <option value="use-cases.html">use-cases.html (Use Cases)</option>
-                        <option value="pricing.html">pricing.html (Pricing)</option>
-                        <option value="articles.html">articles.html (Articles Index)</option>
-                        <option value="team.html">team.html (Team Page)</option>
-                        <option value="rad-core.html">rad-core.html (RAD Core)</option>
-                        <option value="rad-process.html">rad-process.html (RAD Process)</option>
+                        <option value="">Loading pages...</option>
                     </select>
                 </div>
             </div>
@@ -140,15 +208,18 @@
             </div>
         </div>
 
+        <!-- Resize Handle: Editor ↔ Preview -->
+        <div class="resize-handle" id="resizeHandle1" title="Drag to resize"></div>
+
         <!-- Right Panel - Live Preview -->
-        <div class="flex-1 bg-white border-r border-gray-200 flex flex-col">
+        <div id="previewPanel" class="bg-white border-r border-gray-200 flex flex-col" style="flex: 1 1 0%; min-width: 200px;">
             <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                 <h2 class="font-semibold text-gray-800">Live Preview</h2>
                 <div class="flex items-center space-x-2">
                     <button id="refreshPreview" class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300">
                         Refresh
                     </button>
-                    <button id="openNewTab" class="bg-buildly-primary text-white px-3 py-1 rounded text-sm hover:bg-buildly-secondary">
+                    <button id="openNewTab" class="bg-admin-primary text-white px-3 py-1 rounded text-sm hover:bg-admin-secondary">
                         Open in New Tab
                     </button>
                 </div>
@@ -158,8 +229,11 @@
             </div>
         </div>
 
+        <!-- Resize Handle: Preview ↔ Settings -->
+        <div class="resize-handle" id="resizeHandle2" title="Drag to resize"></div>
+
         <!-- Right Panel - Page Metadata & Navigation -->
-        <div class="w-80 bg-gray-50 flex flex-col overflow-y-auto">
+        <div id="settingsPanel" class="bg-gray-50 flex flex-col overflow-y-auto" style="width: 320px; min-width: 200px; flex-shrink: 0;">
             <div class="bg-gray-100 px-4 py-3 border-b border-gray-200">
                 <h2 class="font-semibold text-gray-800">Page Settings</h2>
             </div>
@@ -183,7 +257,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Canonical URL</label>
-                            <input type="text" id="canonicalUrl" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="https://www.buildly.io/page.html">
+                            <input type="text" id="canonicalUrl" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="https://example.com/page.html">
                         </div>
                     </div>
                 </div>
@@ -218,10 +292,6 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Parent Page</label>
                             <select id="parentPage" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm">
                                 <option value="">Top Level</option>
-                                <option value="index.html">Homepage</option>
-                                <option value="labs.html">Labs</option>
-                                <option value="use-cases.html">Use Cases</option>
-                                <option value="pricing.html">Pricing</option>
                             </select>
                         </div>
                         <div>
@@ -245,7 +315,26 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">OG Image</label>
-                            <input type="text" id="ogImage" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="https://www.buildly.io/media/image.jpg">
+                            <input type="text" id="ogImage" class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm" placeholder="https://example.com/media/image.jpg">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Upload -->
+                <div class="bg-white rounded-lg p-4 shadow-sm">
+                    <h3 class="font-semibold text-gray-800 mb-3">Quick Upload</h3>
+                    <div class="space-y-2">
+                        <label class="block w-full cursor-pointer bg-blue-50 border-2 border-dashed border-blue-300 rounded-md py-3 px-4 text-center text-sm text-blue-600 hover:bg-blue-100 transition-colors">
+                            📁 Choose File to Upload
+                            <input type="file" id="quickUploadInput" class="hidden" accept="image/*,.svg,.pdf,.mp3,.mp4,.css,.js,.woff,.woff2">
+                        </label>
+                        <div id="quickUploadStatus" class="text-xs text-gray-500 hidden"></div>
+                        <div id="quickUploadResult" class="hidden">
+                            <div class="flex items-center gap-2">
+                                <input type="text" id="quickUploadPath" class="flex-1 px-2 py-1 border border-gray-300 rounded text-xs bg-gray-50" readonly>
+                                <button id="quickUploadCopy" class="text-xs bg-gray-200 px-2 py-1 rounded hover:bg-gray-300" title="Copy path">📋</button>
+                                <button id="quickUploadInsert" class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" title="Insert into editor">Insert</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -254,7 +343,7 @@
                 <div class="bg-white rounded-lg p-4 shadow-sm">
                     <h3 class="font-semibold text-gray-800 mb-3">Actions</h3>
                     <div class="space-y-2">
-                        <button id="updateMetadata" class="w-full bg-buildly-accent text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors">
+                        <button id="updateMetadata" class="w-full bg-admin-accent text-white py-2 px-4 rounded-md hover:bg-orange-600 transition-colors">
                             Update Metadata
                         </button>
                         <button id="validateHtml" class="w-full bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 transition-colors">
@@ -286,7 +375,7 @@
         <div class="flex items-center space-x-2">
             <span id="validationStatus" class="text-green-400">HTML Valid</span>
             <span>•</span>
-            <span>Buildly Page Editor</span>
+            <span>ForgeWeb Page Editor</span>
         </div>
     </div>
 
@@ -296,27 +385,37 @@
                 this.pageEditor = pageEditor;
                 this.isProcessing = false;
                 
+                // Load saved AI config from localStorage
+                this.aiConfig = JSON.parse(localStorage.getItem('forgeweb_ai_config') || 'null') || {
+                    provider: 'ollama',
+                    endpoint: 'http://localhost:11434',
+                    model: 'llama3',
+                    apiKey: ''
+                };
+                this._populateConfigUI();
+                this._bindConfigEvents();
+                
                 // Initialize and show status
                 console.log('🤖 AI Assistant initialized');
                 this.updateStatus('AI Ready');
                 
                 // Add initialization message after a brief delay
                 setTimeout(() => {
-                    this.addMessage('assistant', 'AI Assistant is ready! You can ask me to help with:\n\n• Creating hero sections\n• Adding new content sections\n• Modifying existing elements\n• Applying Buildly design system\n\nJust type your request and I\'ll provide specific HTML code!', null, 'info');
+                    this.addMessage('assistant', 'AI Assistant is ready! You can ask me to help with:\n\n• Creating hero sections\n• Adding new content sections\n• Modifying existing elements\n• Applying your design system\n\nJust type your request and I\'ll provide specific HTML code!', null, 'info');
                 }, 500);
                 
                 this.buildlyDesignSystem = {
                     colors: {
-                        primary: '#1b5fa3',
-                        secondary: '#144a84',
-                        accent: '#f9943b',
+                        primary: '{{ branding.primary_color | default("#1b5fa3") }}',
+                        secondary: '{{ branding.secondary_color | default("#144a84") }}',
+                        accent: '{{ branding.accent_color | default("#f9943b") }}',
                         dark: '#1F2937',
                         light: '#F3F4F6'
                     },
                     classes: {
-                        buttons: ['bg-buildly-primary', 'bg-buildly-secondary', 'bg-buildly-accent', 'hover:bg-buildly-secondary'],
-                        text: ['text-buildly-primary', 'text-buildly-secondary', 'text-buildly-accent', 'text-buildly-dark'],
-                        backgrounds: ['bg-buildly-primary', 'bg-buildly-light', 'bg-gradient-to-r from-buildly-primary to-buildly-secondary'],
+                        buttons: ['bg-admin-primary', 'bg-admin-secondary', 'bg-admin-accent', 'hover:bg-admin-secondary'],
+                        text: ['text-admin-primary', 'text-admin-secondary', 'text-admin-accent'],
+                        backgrounds: ['bg-admin-primary', 'bg-admin-light'],
                         layout: ['max-w-7xl', 'mx-auto', 'px-4', 'sm:px-6', 'lg:px-8', 'py-20'],
                         spacing: ['space-y-4', 'space-y-8', 'space-y-12', 'space-x-4', 'gap-6', 'gap-8'],
                         typography: ['text-3xl', 'text-4xl', 'font-bold', 'font-semibold', 'text-lg', 'text-xl']
@@ -324,10 +423,98 @@
                     patterns: {
                         hero: 'Hero sections with gradient backgrounds, large headings, and CTA buttons',
                         section: 'Standard sections with max-width containers, padding, and centered content',
-                        button: 'Primary buttons with buildly-primary background and hover effects',
+                        button: 'Primary buttons with themed background and hover effects',
                         card: 'Cards with white background, shadow, and rounded corners'
                     }
                 };
+            }
+
+            _populateConfigUI() {
+                const p = document.getElementById('aiProvider');
+                const e = document.getElementById('aiEndpoint');
+                const m = document.getElementById('aiModel');
+                const k = document.getElementById('aiApiKey');
+                if (p) p.value = this.aiConfig.provider;
+                if (e) e.value = this.aiConfig.endpoint;
+                if (m) m.value = this.aiConfig.model;
+                if (k) k.value = this.aiConfig.apiKey;
+            }
+
+            _saveConfig() {
+                this.aiConfig.provider = (document.getElementById('aiProvider') || {}).value || 'ollama';
+                this.aiConfig.endpoint = (document.getElementById('aiEndpoint') || {}).value || '';
+                this.aiConfig.model = (document.getElementById('aiModel') || {}).value || '';
+                this.aiConfig.apiKey = (document.getElementById('aiApiKey') || {}).value || '';
+                localStorage.setItem('forgeweb_ai_config', JSON.stringify(this.aiConfig));
+            }
+
+            _bindConfigEvents() {
+                const toggle = document.getElementById('toggleAiConfig');
+                const panel = document.getElementById('aiConfigPanel');
+                if (toggle && panel) {
+                    toggle.addEventListener('click', () => panel.classList.toggle('hidden'));
+                }
+                // Auto-save on any config change
+                ['aiProvider', 'aiEndpoint', 'aiModel', 'aiApiKey'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener('change', () => this._saveConfig());
+                });
+                // Provider change => update placeholder
+                const provEl = document.getElementById('aiProvider');
+                const epEl = document.getElementById('aiEndpoint');
+                if (provEl && epEl) {
+                    provEl.addEventListener('change', () => {
+                        const defaults = { ollama: 'http://localhost:11434', openai: 'https://api.openai.com/v1', gemini: '' };
+                        epEl.placeholder = defaults[provEl.value] || '';
+                    });
+                }
+                // Test connection
+                const testBtn = document.getElementById('testAiConnection');
+                if (testBtn) {
+                    testBtn.addEventListener('click', () => this._testConnection());
+                }
+            }
+
+            async _testConnection() {
+                const status = document.getElementById('aiConfigStatus');
+                if (status) status.textContent = 'Testing…';
+                this._saveConfig();
+                try {
+                    const resp = await fetch('/api/ai-generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            prompt: 'Respond with the single word OK',
+                            provider: this.aiConfig.provider,
+                            endpoint: this.aiConfig.endpoint,
+                            model: this.aiConfig.model,
+                            apiKey: this.aiConfig.apiKey
+                        })
+                    });
+                    const data = await resp.json();
+                    if (status) status.textContent = data.success ? '✅ Connected' : `❌ ${data.error || 'Failed'}`;
+                } catch (e) {
+                    if (status) status.textContent = `❌ ${e.message}`;
+                }
+            }
+
+            async _callBackend(prompt, contextHtml) {
+                this._saveConfig();
+                const resp = await fetch('/api/ai-generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt,
+                        context: contextHtml,
+                        provider: this.aiConfig.provider,
+                        endpoint: this.aiConfig.endpoint,
+                        model: this.aiConfig.model,
+                        apiKey: this.aiConfig.apiKey
+                    })
+                });
+                const data = await resp.json();
+                if (data.success && data.code) return data.code;
+                throw new Error(data.error || 'AI returned empty response');
             }
 
             async sendPrompt() {
@@ -368,14 +555,26 @@
                 const currentHtml = this.pageEditor.editor ? this.pageEditor.editor.getValue() : '';
                 const currentFile = this.pageEditor.currentFile || 'unknown';
 
-                // Get the chosen design system
+                // Try real AI backend first
+                try {
+                    const code = await this._callBackend(prompt, currentHtml);
+                    if (code) {
+                        return {
+                            message: `Here's the generated code from ${this.aiConfig.provider}/${this.aiConfig.model}. Click "Apply to Editor" to insert it.`,
+                            code: code,
+                            action: 'insert',
+                            position: 'cursor'
+                        };
+                    }
+                } catch (backendErr) {
+                    console.warn('AI backend unavailable, falling back to templates:', backendErr.message);
+                }
+
+                // Fallback: local template-based response
                 const designSystem = localStorage.getItem('forgeweb_design_system') || 'tailwind';
                 const designConfig = await this.getDesignSystemConfig();
-                
-                // Analyze current HTML structure
                 const htmlAnalysis = this.analyzeHtml(currentHtml);
 
-                // Create rich context about the site
                 const siteContext = {
                     designSystem: designSystem,
                     framework: designSystem.toUpperCase(),
@@ -386,8 +585,8 @@
                     bodyClasses: designConfig.body_classes || ''
                 };
 
-                // Generate intelligent response with context
                 const response = this.generateIntelligentResponse(prompt, currentHtml, siteContext);
+                response.message = '(Using built-in templates — configure an AI provider for smarter results)\n\n' + response.message;
                 return response;
             }
             
@@ -1171,63 +1370,415 @@ All code uses ${context.framework} and will be inserted directly into your edito
             }
         }
 
-        // Initialize page editor and AI helper
-        const pageEditor = new PageEditor();
-        const aiHelper = new AIHelper(pageEditor);
+        class PageEditor {
+            constructor() {
+                this.currentFile = '';
+                this.editor = null;
+                this.fileManager = typeof FileManager !== 'undefined' ? new FileManager() : null;
+                this.recentFiles = JSON.parse(localStorage.getItem('forgeweb-recent-pages') || '[]');
+                this.initializeEditor();
+                this.bindEvents();
+                this.updateRecentFiles();
+                this.loadAvailableFiles();
 
-        // Load files list from API
-        async function loadFilesList() {
-            try {
-                const response = await fetch('/api/list-html-files');
-                if (response.ok) {
-                    const data = await response.json();
+                setTimeout(() => this.checkUrlParams(), 100);
+            }
+
+            checkUrlParams() {
+                const urlParams = new URLSearchParams(window.location.search);
+                const fileParam = urlParams.get('file');
+                if (fileParam) {
                     const fileSelect = document.getElementById('fileSelect');
-                    
-                    // Clear existing options except the first one
-                    while (fileSelect.options.length > 1) {
-                        fileSelect.remove(1);
+                    if (fileSelect) {
+                        const options = Array.from(fileSelect.options);
+                        if (!options.find(o => o.value === fileParam)) {
+                            const opt = document.createElement('option');
+                            opt.value = fileParam;
+                            opt.textContent = fileParam;
+                            fileSelect.appendChild(opt);
+                        }
+                        fileSelect.value = fileParam;
+                        setTimeout(() => this.loadFile(fileParam), 200);
+                    } else {
+                        setTimeout(() => this.checkUrlParams(), 500);
                     }
-                    
-                    // Add files from API
-                    data.files.forEach(file => {
-                        const option = document.createElement('option');
-                        option.value = file.filename;
-                        option.textContent = `${file.filename} - ${file.description}`;
-                        fileSelect.appendChild(option);
-                    });
-                    
-                    console.log(`📁 Loaded ${data.files.length} HTML files`);
-                } else {
-                    console.error('Failed to load files list');
                 }
-            } catch (error) {
-                console.error('Error loading files:', error);
+            }
+
+            initializeEditor() {
+                this.editor = CodeMirror.fromTextArea(document.getElementById('htmlEditor'), {
+                    mode: 'htmlmixed',
+                    theme: 'dracula',
+                    lineNumbers: true,
+                    lineWrapping: true,
+                    autoCloseTags: true,
+                    indentUnit: 2,
+                    tabSize: 2,
+                    extraKeys: {
+                        'Ctrl-S': () => this.savePage(),
+                        'Cmd-S': () => this.savePage(),
+                    }
+                });
+
+                setTimeout(() => { this.editor.refresh(); this.editor.focus(); }, 100);
+
+                this.editor.on('cursorActivity', () => {
+                    const cursor = this.editor.getCursor();
+                    const el = document.getElementById('cursorPosition');
+                    if (el) el.textContent = `Line ${cursor.line + 1}, Col ${cursor.ch + 1}`;
+                });
+
+                this.editor.on('change', () => {
+                    clearTimeout(this.previewTimeout);
+                    this.previewTimeout = setTimeout(() => this.updatePreview(), 500);
+                });
+            }
+
+            bindEvents() {
+                document.getElementById('fileSelect').addEventListener('change', (e) => {
+                    if (e.target.value) this.loadFile(e.target.value);
+                });
+
+                const saveBtn = document.getElementById('saveBtn');
+                if (saveBtn) saveBtn.addEventListener('click', () => this.savePage());
+
+                const refreshBtn = document.getElementById('refreshPreview');
+                if (refreshBtn) refreshBtn.addEventListener('click', () => this.updatePreview());
+
+                const openBtn = document.getElementById('openNewTab');
+                if (openBtn) openBtn.addEventListener('click', () => {
+                    if (this.currentFile) window.open(`../${this.currentFile}`, '_blank');
+                });
+
+                const metaBtn = document.getElementById('updateMetadata');
+                if (metaBtn) metaBtn.addEventListener('click', () => this.updateMetadataInHTML());
+
+                const validateBtn = document.getElementById('validateHtml');
+                if (validateBtn) validateBtn.addEventListener('click', () => this.validateHTML());
+
+                const exportBtn = document.getElementById('exportPage');
+                if (exportBtn) exportBtn.addEventListener('click', () => this.exportPage());
+
+                const sendAi = document.getElementById('sendAiPrompt');
+                if (sendAi) sendAi.addEventListener('click', () => this.aiHelper && this.aiHelper.sendPrompt());
+
+                const aiPrompt = document.getElementById('aiPrompt');
+                if (aiPrompt) aiPrompt.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') this.aiHelper && this.aiHelper.sendPrompt();
+                });
+
+                const clearAi = document.getElementById('clearAiChat');
+                if (clearAi) clearAi.addEventListener('click', () => this.aiHelper && this.aiHelper.clearChat());
+
+                window.addEventListener('resize', () => {
+                    if (this.editor) setTimeout(() => this.editor.refresh(), 100);
+                });
+            }
+
+            async loadAvailableFiles() {
+                try {
+                    const response = await fetch('/api/list-html-files');
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.populateFileSelect(data.files || []);
+                        this.populateParentPages(data.files || []);
+                    }
+                } catch (error) {
+                    console.warn('Error loading file list:', error);
+                }
+            }
+
+            populateFileSelect(files) {
+                const fileSelect = document.getElementById('fileSelect');
+                while (fileSelect.options.length > 1) fileSelect.remove(1);
+
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file.filename;
+                    option.textContent = `${file.filename} - ${file.description}`;
+                    fileSelect.appendChild(option);
+                });
+                console.log(`📁 Loaded ${files.length} HTML files`);
+            }
+
+            populateParentPages(files) {
+                const parentSelect = document.getElementById('parentPage');
+                if (!parentSelect) return;
+                files.forEach(file => {
+                    const option = document.createElement('option');
+                    option.value = file.filename;
+                    option.textContent = file.description || file.filename;
+                    parentSelect.appendChild(option);
+                });
+            }
+
+            async loadFile(filename) {
+                try {
+                    const statusEl = document.getElementById('fileStatus');
+                    if (statusEl) statusEl.textContent = `Loading ${filename}...`;
+
+                    const response = await fetch(`/api/load-file?file=${encodeURIComponent(filename)}`);
+                    if (!response.ok) throw new Error(`File not found: ${response.status}`);
+
+                    const data = await response.json();
+                    this.editor.setValue(data.content);
+                    this.currentFile = filename;
+                    this.extractMetadata(data.content);
+                    this.updatePreview();
+                    this.addToRecentFiles(filename);
+
+                    if (statusEl) statusEl.textContent = `Loaded: ${filename}`;
+                } catch (error) {
+                    console.error('Error loading file:', error);
+                    const statusEl = document.getElementById('fileStatus');
+                    if (statusEl) statusEl.textContent = `Error: ${error.message}`;
+                }
+            }
+
+            extractMetadata(html) {
+                const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+                if (titleMatch) document.getElementById('pageTitle').value = titleMatch[1].trim();
+
+                const descMatch = html.match(/<meta[^>]*name="description"[^>]*content="([^"]*)"[^>]*>/i);
+                if (descMatch) document.getElementById('pageDescription').value = descMatch[1];
+
+                const keywordsMatch = html.match(/<meta[^>]*name="keywords"[^>]*content="([^"]*)"[^>]*>/i);
+                if (keywordsMatch) document.getElementById('pageKeywords').value = keywordsMatch[1];
+
+                const canonicalMatch = html.match(/<link[^>]*rel="canonical"[^>]*href="([^"]*)"[^>]*>/i);
+                if (canonicalMatch) document.getElementById('canonicalUrl').value = canonicalMatch[1];
+
+                const ogTitleMatch = html.match(/<meta[^>]*property="og:title"[^>]*content="([^"]*)"[^>]*>/i);
+                if (ogTitleMatch) {
+                    const el = document.getElementById('ogTitle');
+                    if (el) el.value = ogTitleMatch[1];
+                }
+
+                const ogDescMatch = html.match(/<meta[^>]*property="og:description"[^>]*content="([^"]*)"[^>]*>/i);
+                if (ogDescMatch) {
+                    const el = document.getElementById('ogDescription');
+                    if (el) el.value = ogDescMatch[1];
+                }
+
+                const ogImageMatch = html.match(/<meta[^>]*property="og:image"[^>]*content="([^"]*)"[^>]*>/i);
+                if (ogImageMatch) {
+                    const el = document.getElementById('ogImage');
+                    if (el) el.value = ogImageMatch[1];
+                }
+
+                if (!document.getElementById('menuLabel').value && titleMatch) {
+                    document.getElementById('menuLabel').value = titleMatch[1].trim();
+                }
+            }
+
+            updateMetadataInHTML() {
+                let html = this.editor.getValue();
+                const title = document.getElementById('pageTitle').value;
+                if (title) html = html.replace(/<title[^>]*>[^<]*<\/title>/i, `<title>${title}</title>`);
+                const desc = document.getElementById('pageDescription').value;
+                if (desc) html = html.replace(/<meta[^>]*name="description"[^>]*content="[^"]*"[^>]*>/i, `<meta name="description" content="${desc}">`);
+                this.editor.setValue(html);
+                this.updatePreview();
+            }
+
+            async updatePreview() {
+                const html = this.editor.getValue();
+                const iframe = document.getElementById('previewFrame');
+                if (!html.trim()) return;
+                try {
+                    const response = await fetch('/api/create-preview', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content: html, filename: this.currentFile || 'preview.html' })
+                    });
+                    if (response.ok) {
+                        const result = await response.json();
+                        iframe.src = `/${result.previewFile}?t=${Date.now()}`;
+                    } else {
+                        this.updatePreviewFallback(html);
+                    }
+                } catch (error) {
+                    this.updatePreviewFallback(html);
+                }
+            }
+
+            updatePreviewFallback(html) {
+                const iframe = document.getElementById('previewFrame');
+                iframe.srcdoc = html;
+            }
+
+            async savePage() {
+                if (!this.currentFile) { alert('No file selected to save'); return; }
+                const html = this.editor.getValue();
+                try {
+                    const response = await fetch('/api/save-file', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ file: this.currentFile, content: html })
+                    });
+                    if (response.ok) {
+                        const statusEl = document.getElementById('fileStatus');
+                        if (statusEl) statusEl.textContent = `Saved: ${this.currentFile}`;
+                    } else {
+                        throw new Error('Save failed');
+                    }
+                } catch (error) {
+                    alert('Error saving file: ' + error.message);
+                }
+            }
+
+            validateHTML() {
+                const html = this.editor.getValue();
+                const issues = [];
+                if (!html.includes('<!DOCTYPE') && !html.includes('<!doctype')) issues.push('Missing DOCTYPE');
+                if (!html.includes('<html')) issues.push('Missing <html> tag');
+                if (!html.includes('<head')) issues.push('Missing <head> tag');
+                if (!html.includes('<title')) issues.push('Missing <title> tag');
+                const statusEl = document.getElementById('validationStatus');
+                if (issues.length === 0) {
+                    if (statusEl) { statusEl.textContent = 'HTML Valid'; statusEl.className = 'text-green-400'; }
+                } else {
+                    if (statusEl) { statusEl.textContent = `${issues.length} issue(s)`; statusEl.className = 'text-yellow-400'; }
+                    alert('Validation Issues:\n• ' + issues.join('\n• '));
+                }
+            }
+
+            exportPage() {
+                if (!this.editor) return;
+                const html = this.editor.getValue();
+                const blob = new Blob([html], { type: 'text/html' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = this.currentFile || 'page.html';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            }
+
+            addToRecentFiles(filename) {
+                this.recentFiles = this.recentFiles.filter(f => f !== filename);
+                this.recentFiles.unshift(filename);
+                if (this.recentFiles.length > 5) this.recentFiles = this.recentFiles.slice(0, 5);
+                localStorage.setItem('forgeweb-recent-pages', JSON.stringify(this.recentFiles));
+                this.updateRecentFiles();
+            }
+
+            updateRecentFiles() {
+                const container = document.getElementById('recentFiles');
+                if (!container) return;
+                if (this.recentFiles.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-gray-500">No recent files</p>';
+                } else {
+                    container.innerHTML = this.recentFiles.map(f =>
+                        `<button class="w-full text-left text-sm text-admin-primary hover:underline truncate" onclick="pageEditor.loadFile('${f}')">${f}</button>`
+                    ).join('');
+                }
             }
         }
 
-        // File selection handler
-        document.getElementById('fileSelect').addEventListener('change', async function() {
-            const filename = this.value;
-            if (!filename) return;
-            
-            try {
-                const response = await fetch(`/api/read-file?file=${encodeURIComponent(filename)}`);
-                if (response.ok) {
-                    const data = await response.json();
-                    pageEditor.editor.setValue(data.content || '');
-                    console.log(`✓ Loaded ${filename}`);
-                } else {
-                    console.error(`Failed to load ${filename}`);
-                    alert(`Could not load ${filename}. Make sure the file exists in the website directory.`);
-                }
-            } catch (error) {
-                console.error('Error loading file:', error);
-                alert('Error loading file: ' + error.message);
-            }
-        });
+        // Initialize page editor and AI helper
+        const pageEditor = new PageEditor();
+        const aiHelper = new AIHelper(pageEditor);
+        pageEditor.aiHelper = aiHelper;
 
-        // Load files list on page load
-        loadFilesList();
+        // --- Resizable Panels ---
+        (function initResizablePanels() {
+            function setupResize(handleId, leftPanelId, rightPanelId) {
+                const handle = document.getElementById(handleId);
+                const leftPanel = document.getElementById(leftPanelId);
+                const rightPanel = document.getElementById(rightPanelId);
+                if (!handle || !leftPanel || !rightPanel) return;
+
+                let startX, startLeftW, startRightW;
+
+                handle.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    startX = e.clientX;
+                    startLeftW = leftPanel.getBoundingClientRect().width;
+                    startRightW = rightPanel.getBoundingClientRect().width;
+                    handle.classList.add('active');
+                    document.body.classList.add('resizing');
+
+                    function onMouseMove(e) {
+                        const dx = e.clientX - startX;
+                        const newLeftW = Math.max(200, startLeftW + dx);
+                        const newRightW = Math.max(200, startRightW - dx);
+                        leftPanel.style.flex = 'none';
+                        leftPanel.style.width = newLeftW + 'px';
+                        rightPanel.style.flex = 'none';
+                        rightPanel.style.width = newRightW + 'px';
+                        if (pageEditor.editor) pageEditor.editor.refresh();
+                    }
+
+                    function onMouseUp() {
+                        handle.classList.remove('active');
+                        document.body.classList.remove('resizing');
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                        if (pageEditor.editor) pageEditor.editor.refresh();
+                    }
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+            }
+
+            setupResize('resizeHandle1', 'editorPanel', 'previewPanel');
+            setupResize('resizeHandle2', 'previewPanel', 'settingsPanel');
+        })();
+
+        // --- Quick Upload Widget ---
+        (function initQuickUpload() {
+            const input = document.getElementById('quickUploadInput');
+            const status = document.getElementById('quickUploadStatus');
+            const result = document.getElementById('quickUploadResult');
+            const pathEl = document.getElementById('quickUploadPath');
+            const copyBtn = document.getElementById('quickUploadCopy');
+            const insertBtn = document.getElementById('quickUploadInsert');
+            if (!input) return;
+
+            input.addEventListener('change', async () => {
+                const file = input.files[0];
+                if (!file) return;
+                status.textContent = `Uploading ${file.name}…`;
+                status.classList.remove('hidden');
+                result.classList.add('hidden');
+                const fd = new FormData();
+                fd.append('file', file);
+                try {
+                    const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+                    const data = await resp.json();
+                    if (data.success) {
+                        pathEl.value = data.path;
+                        result.classList.remove('hidden');
+                        status.textContent = '✅ Uploaded';
+                    } else {
+                        status.textContent = `❌ ${data.error || 'Upload failed'}`;
+                    }
+                } catch (e) {
+                    status.textContent = `❌ ${e.message}`;
+                }
+                input.value = '';
+            });
+
+            if (copyBtn) {
+                copyBtn.addEventListener('click', () => {
+                    navigator.clipboard.writeText(pathEl.value);
+                    copyBtn.textContent = '✓';
+                    setTimeout(() => copyBtn.textContent = '📋', 1500);
+                });
+            }
+            if (insertBtn) {
+                insertBtn.addEventListener('click', () => {
+                    const path = pathEl.value;
+                    if (!path || !pageEditor.editor) return;
+                    const isImage = /\.(png|jpe?g|gif|svg|webp|ico)$/i.test(path);
+                    const tag = isImage ? `<img src="${path}" alt="">` : `<a href="${path}">${path}</a>`;
+                    const doc = pageEditor.editor.getDoc();
+                    doc.replaceSelection(tag);
+                    pageEditor.editor.focus();
+                });
+            }
+        })();
     </script>
 {% endblock %}
 

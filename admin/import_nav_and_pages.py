@@ -8,11 +8,11 @@ import sqlite3
 from pathlib import Path
 
 NAV_ITEMS = [
-    {"title": "Home", "url": "/", "order": 1, "page_file": "website/index.html"},
-    {"title": "News", "url": "/news/", "order": 2, "page_file": "news/index.html"},
-    {"title": "Artists", "url": "/artists.html", "order": 3, "page_file": "artists.html"},
-    {"title": "Store", "url": "/store/index.html", "order": 4, "page_file": "website/store/index.html"},
-    {"title": "Unsubscribe", "url": "/unsubscribe.html", "order": 5, "page_file": "unsubscribe.html"}
+    {"title": "Home", "url": "/", "order": 1, "page_file": "docs/index.html"},
+    {"title": "Store", "url": "/store/", "order": 2, "page_file": "docs/store/index.html"},
+    {"title": "News", "url": "/news/", "order": 3, "page_file": "docs/news/index.html"},
+    {"title": "About", "url": "/about.html", "order": 4, "page_file": "docs/about.html"},
+    {"title": "Contact", "url": "/contact.html", "order": 5, "page_file": "docs/contact.html"}
 ]
 
 def get_db():

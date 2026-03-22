@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Articles Manager - Buildly Admin{% endblock %}
+{% block title %}Articles Manager - ForgeWeb Admin{% endblock %}
 
 {% block extra_head %}
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -65,10 +65,10 @@
                 <div>
                     <h3 class="text-lg font-semibold mb-4">Current Featured Article</h3>
                     <div id="current-featured" class="bg-gradient-to-r from-admin-primary to-admin-secondary rounded-lg p-4 text-white">
-                        <p class="text-sm opacity-90 mb-2">Product Management • Featured</p>
-                        <h4 class="font-bold mb-2" id="featured-title">From MVP to Market Leader: Navigating the Product Lifecycle</h4>
-                        <p class="text-sm opacity-90 mb-3" id="featured-description">This article examines every phase of the product lifecycle offering best practices to achieve market leadership and sustainable growth.</p>
-                        <p class="text-xs opacity-75" id="featured-link">articles/product-lifecycle.html</p>
+                        <p class="text-sm opacity-90 mb-2" id="featured-category">No article featured yet</p>
+                        <h4 class="font-bold mb-2" id="featured-title">Select an article to feature</h4>
+                        <p class="text-sm opacity-90 mb-3" id="featured-description">Choose an article from the dropdown to set it as featured.</p>
+                        <p class="text-xs opacity-75" id="featured-link"></p>
                     </div>
                 </div>
 
@@ -98,18 +98,9 @@
 
             <!-- Category Tabs -->
             <div class="border-b border-gray-200 mb-6">
-                <nav class="-mb-px flex space-x-8">
-                    <button onclick="showCategory('product-management')" id="tab-product-management" class="category-tab py-2 px-1 border-b-2 font-medium text-sm focus:outline-none border-admin-primary text-admin-primary">
-                        Product Management
-                    </button>
-                    <button onclick="showCategory('ai')" id="tab-ai" class="category-tab py-2 px-1 border-b-2 font-medium text-sm focus:outline-none border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        AI & Machine Learning
-                    </button>
-                    <button onclick="showCategory('development')" id="tab-development" class="category-tab py-2 px-1 border-b-2 font-medium text-sm focus:outline-none border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Software Development
-                    </button>
-                    <button onclick="showCategory('startup')" id="tab-startup" class="category-tab py-2 px-1 border-b-2 font-medium text-sm focus:outline-none border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        Startup Growth
+                <nav id="category-tabs" class="-mb-px flex space-x-8">
+                    <button onclick="showCategory('all')" id="tab-all" class="category-tab py-2 px-1 border-b-2 font-medium text-sm focus:outline-none border-admin-primary text-admin-primary">
+                        All
                     </button>
                 </nav>
             </div>
@@ -139,31 +130,50 @@
 {% block extra_scripts %}
 <script>
         let articles = [];
-        let featuredArticle = {
-            title: "From MVP to Market Leader: Navigating the Product Lifecycle",
-            description: "This article examines every phase of the product lifecycle offering best practices to achieve market leadership and sustainable growth.",
-            link: "articles/product-lifecycle.html",
-            category: "Product Management"
-        };
+        let featuredArticle = null;
 
         // Initialize the page
         async function init() {
             await loadArticles();
+            buildCategoryTabs();
             populateFeaturedSelector();
-            showCategory('product-management');
+            showCategory('all');
         }
 
-        // Load articles from the file system
+        // Load articles from the database
         async function loadArticles() {
             try {
                 const response = await fetch('/api/articles-list');
                 const data = await response.json();
-                articles = data.articles;
-                showNotification('✅ Articles loaded successfully', 'success');
+                // Map DB field names to template field names
+                articles = (data.articles || []).map(a => ({
+                    ...a,
+                    filename: a.file_path || '',
+                    description: a.excerpt || ''
+                }));
+                if (articles.length > 0) {
+                    showNotification(`✅ ${articles.length} articles loaded`, 'success');
+                } else {
+                    showNotification('ℹ️ No articles found yet', 'info');
+                }
             } catch (error) {
                 console.error('Failed to load articles:', error);
                 showNotification('❌ Failed to load articles', 'error');
             }
+        }
+
+        // Build category tabs dynamically from article data
+        function buildCategoryTabs() {
+            const categories = new Set();
+            articles.forEach(a => { if (a.category) categories.add(a.category); });
+            const tabsContainer = document.getElementById('category-tabs');
+            // Keep the "All" tab, add dynamic ones
+            let html = `<button onclick="showCategory('all')" id="tab-all" class="category-tab py-2 px-1 border-b-2 font-medium text-sm focus:outline-none border-admin-primary text-admin-primary">All</button>`;
+            categories.forEach(cat => {
+                const slug = cat.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                html += `<button onclick="showCategory('${slug}')" id="tab-${slug}" class="category-tab py-2 px-1 border-b-2 font-medium text-sm focus:outline-none border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">${cat}</button>`;
+            });
+            tabsContainer.innerHTML = html;
         }
 
         // Populate the featured article selector
@@ -175,7 +185,7 @@
                 const option = document.createElement('option');
                 option.value = article.filename;
                 option.textContent = `${article.title} (${article.category})`;
-                if (article.filename === featuredArticle.link) {
+                if (featuredArticle && article.filename === featuredArticle.link) {
                     option.selected = true;
                 }
                 selector.appendChild(option);
@@ -242,18 +252,22 @@
                 tab.classList.remove('border-admin-primary', 'text-admin-primary');
                 tab.classList.add('border-transparent', 'text-gray-500');
             });
-            document.getElementById(`tab-${category}`).classList.add('border-admin-primary', 'text-admin-primary');
-            document.getElementById(`tab-${category}`).classList.remove('border-transparent', 'text-gray-500');
+            const activeTab = document.getElementById(`tab-${category}`);
+            if (activeTab) {
+                activeTab.classList.add('border-admin-primary', 'text-admin-primary');
+                activeTab.classList.remove('border-transparent', 'text-gray-500');
+            }
 
             // Filter and display articles
-            const categoryMap = {
-                'product-management': 'Product Management',
-                'ai': 'AI',
-                'development': 'Software Development',
-                'startup': 'Startup Growth'
-            };
-
-            const filteredArticles = articles.filter(article => article.category === categoryMap[category]);
+            let filteredArticles;
+            if (category === 'all') {
+                filteredArticles = articles;
+            } else {
+                filteredArticles = articles.filter(article => {
+                    const slug = (article.category || '').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                    return slug === category;
+                });
+            }
             renderArticlesList(filteredArticles);
         }
 
@@ -294,8 +308,9 @@
         async function refreshArticlesList() {
             showNotification('🔄 Refreshing articles list...', 'info');
             await loadArticles();
+            buildCategoryTabs();
             populateFeaturedSelector();
-            showCategory('product-management');
+            showCategory('all');
         }
 
         // Regenerate articles page

@@ -1,20 +1,68 @@
-<!-- Home Page Template -->
-<section class="py-16 bg-white">
+<!-- Home Page Template - NullRecords -->
+<section class="py-16 relative z-10">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Features Section -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-            {{FEATURE_CARDS}}
+
+        <!-- New Release Section -->
+        <div class="mb-16 text-center">
+            <h2 class="text-3xl font-pixel text-cyber-blue mb-8 glow-text">Latest Release</h2>
+            <div class="card-hover rounded-xl p-8 max-w-2xl mx-auto">
+                <h3 class="text-2xl font-pixel text-cyber-red mb-2">Oscillator Overthruster</h3>
+                <p class="text-accent font-mono mb-4">My Evil Robot Army</p>
+                <p class="text-gray-400 font-mono mb-6">The newest album from MERA — experimental electronic and nu jazz fused into something entirely new.</p>
+                <a href="store/" class="inline-block bg-cyber-red hover:bg-opacity-80 text-white font-mono py-3 px-8 rounded-lg transition-all">
+                    Listen Now
+                </a>
+            </div>
         </div>
-        
-        <!-- Recent Content -->
-        {{RECENT_CONTENT}}
-        
-        <!-- Call to Action -->
-        <div class="text-center bg-gradient-to-r from-primary to-secondary rounded-2xl p-12 text-white">
-            <h2 class="text-3xl font-bold mb-4">Ready to Get Started?</h2>
-            <p class="text-xl mb-8 text-blue-100">Join thousands of others who are already using our platform.</p>
-            <a href="contact.html" class="inline-block bg-accent hover:bg-orange-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">
-                Get in Touch
+
+        <!-- Feature Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+            <a href="store/" class="card-hover p-8 rounded-xl text-center block">
+                <div class="text-5xl mb-4">🎵</div>
+                <h3 class="text-xl font-pixel text-cyber-blue mb-4">Music Store</h3>
+                <p class="text-gray-400 font-mono">Lossless albums, free preview tracks, and curated collections from NullRecords artists.</p>
+            </a>
+            <a href="news/" class="card-hover p-8 rounded-xl text-center block">
+                <div class="text-5xl mb-4">📡</div>
+                <h3 class="text-xl font-pixel text-cyber-blue mb-4">News Feed</h3>
+                <p class="text-gray-400 font-mono">Aggregated coverage from Bandcamp, Last.fm, SoundCloud, and more.</p>
+            </a>
+            <a href="https://nullrecords.printify.me/" target="_blank" rel="noopener" class="card-hover p-8 rounded-xl text-center block">
+                <div class="text-5xl mb-4">👕</div>
+                <h3 class="text-xl font-pixel text-cyber-blue mb-4">Merch</h3>
+                <p class="text-gray-400 font-mono">Apparel, accessories, and physical goods from the NullRecords universe.</p>
+            </a>
+        </div>
+
+        <!-- Catalog Highlight -->
+        <div class="mb-16 text-center">
+            <h2 class="text-3xl font-pixel text-cyber-blue mb-8 glow-text">Catalog</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="card-hover p-6 rounded-xl">
+                    <h4 class="font-pixel text-accent text-sm mb-1">Space Jazz</h4>
+                    <p class="text-gray-500 font-mono text-xs">My Evil Robot Army</p>
+                </div>
+                <div class="card-hover p-6 rounded-xl">
+                    <h4 class="font-pixel text-accent text-sm mb-1">Travel Beyond</h4>
+                    <p class="text-gray-500 font-mono text-xs">My Evil Robot Army</p>
+                </div>
+                <div class="card-hover p-6 rounded-xl">
+                    <h4 class="font-pixel text-accent text-sm mb-1">Spiraling</h4>
+                    <p class="text-gray-500 font-mono text-xs">My Evil Robot Army</p>
+                </div>
+                <div class="card-hover p-6 rounded-xl">
+                    <h4 class="font-pixel text-accent text-sm mb-1">Explorations</h4>
+                    <p class="text-gray-500 font-mono text-xs">My Evil Robot Army</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="text-center rounded-2xl p-12 border border-dark-border" style="background: linear-gradient(135deg, #1a1a2e, #0a0a0a);">
+            <h2 class="text-3xl font-pixel text-cyber-blue mb-4">Own Your Music</h2>
+            <p class="text-xl mb-8 text-gray-400 font-mono">DRM-free, lossless, yours forever. No subscriptions, no algorithms.</p>
+            <a href="store/" class="inline-block bg-cyber-blue hover:bg-opacity-80 text-dark-bg font-mono font-bold py-3 px-8 rounded-lg transition-all">
+                Browse the Store
             </a>
         </div>
     </div>

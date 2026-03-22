@@ -1,0 +1,27 @@
+<!-- Store Page Template - NullRecords -->
+<section class="py-16 relative z-10">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-pixel text-cyber-blue mb-4 glow-text">Books & Music</h1>
+            <p class="text-gray-400 font-mono max-w-3xl mx-auto">
+                Discover a curated collection of sci-fi and fantasy public domain books, Nu Jazz, LoFi original music, and creative works.
+                Every item is a piece of the NullRecords story — crafted for collectors, artists, and music lovers who want to own something rather than rent it.
+            </p>
+        </div>
+
+        <!-- Store items are loaded dynamically from store_items.json -->
+        <div id="store-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {{STORE_ITEMS}}
+        </div>
+
+        <!-- Merch CTA -->
+        <div class="mt-16 text-center rounded-2xl p-12 border border-dark-border" style="background: linear-gradient(135deg, #1a1a2e, #0a0a0a);">
+            <h2 class="text-3xl font-pixel text-cyber-blue mb-4">Merch Store</h2>
+            <p class="text-xl mb-8 text-gray-400 font-mono">Apparel, accessories, and physical goods.</p>
+            <a href="https://nullrecords.printify.me/" target="_blank" rel="noopener"
+               class="inline-block bg-accent hover:bg-opacity-80 text-white font-mono font-bold py-3 px-8 rounded-lg transition-all">
+                Visit Merch Store
+            </a>
+        </div>
+    </div>
+</section>

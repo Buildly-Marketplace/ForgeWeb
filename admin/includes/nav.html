@@ -1,8 +1,8 @@
 <!-- Admin Navigation Sidebar -->
-<div class="text-white" style="background: linear-gradient(to bottom, #1b5fa3, #144a84);">
+<div class="text-white" style="background: linear-gradient(to bottom, #0a0a0a, #1a1a2e);">
     <div class="p-4">
         <div class="mb-4">
-            <h2 class="text-lg font-bold text-white">Admin</h2>
+            <h2 class="text-lg font-bold" style="color: #00ffff;">{{ site_name | default('ForgeWeb') }} Admin</h2>
         </div>
         <nav class="space-y-2">
             <a href="index.html" class="flex items-center px-3 py-2 rounded-lg text-white hover:bg-white hover:bg-opacity-15 transition-colors nav-item" data-page="dashboard" style="color: white;">
@@ -49,8 +49,8 @@
         
         <div class="mt-8 pt-6 border-t border-white border-opacity-20">
             <div class="text-sm" style="color: rgba(255, 255, 255, 0.7);">
-                <div class="mb-2">Buildly Admin v1.0</div>
-                <div class="text-xs">AI-Powered Content Management</div>
+                <div class="mb-2">{{ site_name | default('ForgeWeb') }} Admin</div>
+                <div class="text-xs">Powered by ForgeWeb</div>
             </div>
         </div>
     </div>

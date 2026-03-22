@@ -10,10 +10,11 @@
             theme: {
                 extend: {
                     colors: {
-                        'buildly-primary': '#1b5fa3',
-                        'buildly-secondary': '#144a84',
-                        'buildly-accent': '#f9943b',
-                        'buildly-dark': '#1F2937'
+                        'admin-primary': '#1b5fa3',
+                        'admin-secondary': '#144a84',
+                        'admin-accent': '#f9943b',
+                        'admin-dark': '#1F2937',
+                        'admin-success': '#10b981'
                     }
                 }
             }
@@ -29,14 +30,14 @@
 <body class="bg-gray-100" data-page="{% block page_id %}{% endblock %}">
     <div class="flex h-screen">
         <!-- Sidebar Navigation -->
-        <aside class="w-64 bg-gradient-to-b from-buildly-primary to-buildly-secondary text-white flex-shrink-0">
+        <aside class="w-64 bg-gradient-to-b from-admin-primary to-admin-secondary text-white flex-shrink-0">
             <div class="p-6">
                 <div class="flex items-center space-x-3 mb-8">
-                    <div class="w-10 h-10 bg-buildly-accent rounded-lg flex items-center justify-center">
+                    <div class="w-10 h-10 bg-admin-accent rounded-lg flex items-center justify-center">
                         <span class="text-white font-bold text-xl">FW</span>
                     </div>
                     <div>
-                        <h1 class="text-lg font-bold">ForgeWeb</h1>
+                        <h1 class="text-lg font-bold">{{ site_name | default('ForgeWeb') }}</h1>
                         <p class="text-xs text-blue-200">Admin Panel</p>
                     </div>
                 </div>
@@ -73,6 +74,10 @@
                     <a href="/admin/html-import.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="import">
                         <span>📥</span>
                         <span>Import HTML</span>
+                    </a>
+                    <a href="/admin/media-library.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="media">
+                        <span>🖼️</span>
+                        <span>Media Library</span>
                     </a>
                     <a href="/admin/settings.html" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-white hover:bg-opacity-10 transition-colors nav-item" data-page="settings">
                         <span>🔧</span>
@@ -125,7 +130,7 @@
                     <div>
                         <span>ForgeWeb v1.0.0</span>
                         <span class="mx-2">•</span>
-                        <span>Powered by <a href="https://buildly.io" class="text-buildly-primary hover:underline">Buildly</a></span>
+                        <span>Powered by <a href="https://buildly.io" class="text-admin-primary hover:underline">Buildly</a></span>
                     </div>
                     <div id="save-status" class="text-gray-500">
                         <!-- Save status updates here -->

@@ -19,6 +19,13 @@
 admin/forgeweb.db
 admin/*.db
 
+# Site-specific data files (generated per-installation, not shared)
+admin/site-config.json
+admin/branding-config.json
+admin/store_items.json
+admin/news_articles.json
+.forgeweb_control_config.json
+
 # Python Virtual Environment
 venv/
 env/

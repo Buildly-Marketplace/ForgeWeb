@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}Media Library - ForgeWeb Admin{% endblock %}
+
+{% block extra_head %}
+<style>
+.upload-zone {
+    border: 2px dashed #cbd5e1;
+    border-radius: 0.75rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+.upload-zone.dragover {
+    border-color: #1b5fa3;
+    background: #eff6ff;
+}
+.media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+.media-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+.media-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.media-card img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    background: #f3f4f6;
+}
+.media-card .info {
+    padding: 0.5rem;
+}
+.media-card .filename {
+    font-size: 0.75rem;
+    font-weight: 500;
+    word-break: break-all;
+}
+.media-card .meta {
+    font-size: 0.65rem;
+    color: #9ca3af;
+}
+.copy-toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: #10b981; color: white;
+    padding: 0.75rem 1.5rem; border-radius: 0.5rem;
+    font-size: 0.875rem; z-index: 50;
+    animation: fadeOut 2s 1s forwards;
+}
+@keyframes fadeOut { to { opacity: 0; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-bold text-gray-900 mb-2">Media Library</h1>
+    <p class="text-gray-600">Upload and manage images, fonts, and other assets for your site</p>
+</div>
+
+<!-- Upload Zone -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <div id="uploadZone" class="upload-zone">
+        <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+        </svg>
+        <p class="text-gray-600 mb-1">Drag & drop files here, or <span class="text-blue-600 font-medium">click to browse</span></p>
+        <p class="text-xs text-gray-400">PNG, JPG, GIF, SVG, WebP, PDF, MP3, MP4, CSS, JS, WOFF2</p>
+        <input type="file" id="fileInput" class="hidden" multiple
+               accept=".png,.jpg,.jpeg,.gif,.svg,.webp,.ico,.mp3,.mp4,.pdf,.css,.js,.woff,.woff2">
+    </div>
+    <div id="uploadProgress" class="hidden mt-4">
+        <div class="flex items-center space-x-3">
+            <div class="animate-spin h-5 w-5 border-2 border-blue-500 border-t-transparent rounded-full"></div>
+            <span id="uploadStatus" class="text-sm text-gray-600">Uploading…</span>
+        </div>
+    </div>
+</div>
+
+<!-- File Grid -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gray-900">Uploaded Files</h2>
+        <button onclick="loadMedia()" class="text-blue-600 hover:text-blue-700 text-sm">↻ Refresh</button>
+    </div>
+    <div id="mediaGrid" class="media-grid">
+        <p class="text-gray-500 col-span-full text-center py-8">Loading…</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+const zone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const progress = document.getElementById('uploadProgress');
+const statusEl = document.getElementById('uploadStatus');
+
+// Click to browse
+zone.addEventListener('click', () => fileInput.click());
+
+// Drag & drop
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if (e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) uploadFiles(fileInput.files);
+});
+
+async function uploadFiles(files) {
+    progress.classList.remove('hidden');
+    let uploaded = 0;
+    for (const file of files) {
+        statusEl.textContent = `Uploading ${file.name}… (${++uploaded}/${files.length})`;
+        const fd = new FormData();
+        fd.append('file', file);
+        try {
+            const resp = await fetch('/api/upload', { method: 'POST', body: fd });
+            const data = await resp.json();
+            if (!data.success) console.error('Upload failed:', data.error);
+        } catch (err) {
+            console.error('Upload error:', err);
+        }
+    }
+    progress.classList.add('hidden');
+    fileInput.value = '';
+    loadMedia();
+}
+
+async function loadMedia() {
+    const grid = document.getElementById('mediaGrid');
+    try {
+        const resp = await fetch('/api/media');
+        const data = await resp.json();
+        const files = data.files || [];
+
+        if (files.length === 0) {
+            grid.innerHTML = '<p class="text-gray-500 col-span-full text-center py-8">No files uploaded yet.</p>';
+            return;
+        }
+
+        grid.innerHTML = files.map(f => {
+            const isImage = /\.(png|jpe?g|gif|svg|webp|ico)$/i.test(f.filename);
+            const sizeKB = (f.size / 1024).toFixed(1);
+            const thumb = isImage
+                ? `<img src="${f.url}" alt="${esc(f.filename)}" loading="lazy">`
+                : `<div style="height:140px" class="flex items-center justify-center bg-gray-100 text-3xl text-gray-400">📄</div>`;
+            return `
+                <div class="media-card">
+                    ${thumb}
+                    <div class="info">
+                        <div class="filename">${esc(f.filename)}</div>
+                        <div class="meta">${sizeKB} KB</div>
+                        <button onclick="copyPath('${f.url}')"
+                            class="mt-1 text-xs text-blue-600 hover:text-blue-800">📋 Copy path</button>
+                    </div>
+                </div>`;
+        }).join('');
+    } catch (err) {
+        grid.innerHTML = `<p class="text-red-500 col-span-full text-center py-8">Error loading media: ${err.message}</p>`;
+    }
+}
+
+function copyPath(path) {
+    navigator.clipboard.writeText(path).then(() => {
+        const toast = document.createElement('div');
+        toast.className = 'copy-toast';
+        toast.textContent = 'Path copied!';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    });
+}
+
+function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+}
+
+document.addEventListener('DOMContentLoaded', loadMedia);
+</script>
+{% endblock %}

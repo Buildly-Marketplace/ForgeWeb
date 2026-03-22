@@ -117,10 +117,23 @@ def import_artists(conn, artists_html_path):
 def main():
     base = Path(__file__).parent.parent.parent
     conn = get_db()
-    import_news_articles(conn, str(base / 'news_articles.json'))
+    # News articles - prefer admin copy, fall back to root
+    news_path = str(Path(__file__).parent / 'news_articles.json')
+    if not os.path.exists(news_path):
+        news_path = str(base / 'docs' / 'news_articles.json')
+    import_news_articles(conn, news_path)
     import_daily_reports(conn, str(base / 'dashboard/daily_reports'))
-    import_store_items(conn, str(base / 'docs/store/store_items.json'))
-    import_artists(conn, str(base / 'docs/artists.html'))
+    # Store items - prefer admin copy, fall back to docs
+    store_path = str(Path(__file__).parent / 'store_items.json')
+    if not os.path.exists(store_path):
+        store_path = str(base / 'docs' / 'store' / 'store_items.json')
+    import_store_items(conn, store_path)
+    # Artists - only if file exists (page may not be generated yet)
+    artists_path = str(base / 'docs' / 'artists.html')
+    if os.path.exists(artists_path):
+        import_artists(conn, artists_path)
+    else:
+        print('Skipped artists import (docs/artists.html not found)')
     conn.close()
     print("All content imported into ForgeWeb database.")
 

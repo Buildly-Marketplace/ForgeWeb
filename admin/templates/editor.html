@@ -1439,7 +1439,7 @@ Return ONLY the keywords separated by commas, no quotes, bullets, or numbering.`
             };
             
             const categoryName = categoryMap[articleData.category] || 'General';
-            const categoryClass = articleData.category === 'AI' ? 'buildly-accent' : 'buildly-primary';
+            const categoryClass = articleData.category === 'AI' ? 'admin-accent' : 'admin-primary';
             
             return {
                 category: articleData.category,
@@ -1455,7 +1455,7 @@ Return ONLY the keywords separated by commas, no quotes, bullets, or numbering.`
                         </div>
                         <h4 class="text-lg font-semibold mb-2">${articleData.title}</h4>
                         <p class="text-gray-600 text-sm mb-4">${articleData.description}</p>
-                        <a href="${articleData.fullPath}" class="text-buildly-primary font-medium hover:text-buildly-secondary">Read More →</a>
+                        <a href="${articleData.fullPath}" class="text-admin-primary font-medium hover:text-admin-secondary">Read More →</a>
                     </div>`
             };
         }
@@ -1481,13 +1481,13 @@ PUBLISHING INSTRUCTIONS:
 1. UPLOAD THE ARTICLE FILE:
    - Download completed: ${fullPath}
    - Upload this file to your website's ${articleData.folder} folder
-   - The file is ready to publish at: https://www.buildly.io/${fullPath}
+   - The file is ready to publish at: ${window.ForgeWeb?.siteUrl || ''}/${fullPath}
 
 2. ${updateIndex ? 'UPDATE THE ARTICLES INDEX:' : 'OPTIONAL - UPDATE ARTICLES INDEX:'}
    ${updateIndex ? '(Instructions provided below)' : '(You can manually add to articles.html later)'}
 
 3. VERIFY DEPLOYMENT:
-   - Check that the article loads at: https://www.buildly.io/${fullPath}
+   - Check that the article loads at: ${window.ForgeWeb?.siteUrl || ''}/${fullPath}
    - Verify it appears in the articles index if updated
 
 The article HTML file has been generated with:
