@@ -712,7 +712,7 @@ Thumbs.db
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data.decode('utf-8'))
             
-            file_path = data.get('path')
+            file_path = data.get('path') or data.get('file')
             file_content = data.get('content')
             
             if not file_path or file_content is None:
