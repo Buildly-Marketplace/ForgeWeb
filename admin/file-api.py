@@ -1505,7 +1505,7 @@ Sitemap: {site_url}/sitemap.xml"""
         }
     
     def update_static_assets(self, branding_data):
-        """Update CSS and JS files in website/assets with new branding"""
+        """Update CSS and JS files in docs/assets with new branding"""
         # Ensure assets directories exist
         css_dir = os.path.join(self.website_root, 'assets', 'css')
         js_dir = os.path.join(self.website_root, 'assets', 'js')
@@ -1674,7 +1674,7 @@ document.addEventListener('DOMContentLoaded', () => {{
 }});
 """
             
-            # Save to website/assets/js/
+            # Save to docs/assets/js/
             js_dir = os.path.join(self.website_root, 'assets', 'js')
             os.makedirs(js_dir, exist_ok=True)
             js_path = os.path.join(js_dir, 'site-config.js')
@@ -2258,7 +2258,7 @@ def start_forgeweb_server(port=8000, host='localhost'):
 📂 Directory Structure:
    Repository Root:     {repo_root}/
    ├── ForgeWeb/        (admin tools, not deployed)
-   └── website/         (your content, deployed to GitHub Pages)
+   └── docs/            (your content, deployed to GitHub Pages)
    
    ➡️  Your pages save to: {path_info.website_root}/
    ➡️  ForgeWeb excluded via .gitignore
