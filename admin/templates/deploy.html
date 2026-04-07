@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}Deploy - ForgeWeb Admin{% endblock %}
+{% block page_id %}deploy{% endblock %}
+{% block page_title %}Deploy to GitHub Pages{% endblock %}
+{% block page_subtitle %}Commit changes and push to your live site{% endblock %}
+
+{% block header_actions %}
+<button onclick="refreshStatus()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm">
+    🔄 Refresh
+</button>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl">
+    <!-- Status Banner -->
+    <div id="status-banner" class="mb-6 p-4 rounded-lg border hidden">
+    </div>
+
+    <!-- Branch & Remote Info -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <p class="text-xs text-gray-500 mb-1">Branch</p>
+            <p id="branch-name" class="text-lg font-semibold text-gray-900">—</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <p class="text-xs text-gray-500 mb-1">Remote</p>
+            <p id="remote-url" class="text-sm font-mono text-gray-700 truncate" title="">—</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <p class="text-xs text-gray-500 mb-1">Working Tree</p>
+            <p id="tree-status" class="text-lg font-semibold">—</p>
+        </div>
+    </div>
+
+    <!-- Changed Files -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h2 class="text-lg font-semibold text-gray-900">Changed Files</h2>
+            <span id="file-count" class="text-sm text-gray-500"></span>
+        </div>
+        <div id="changed-files" class="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+            <div class="px-6 py-8 text-center text-gray-400">Loading...</div>
+        </div>
+    </div>
+
+    <!-- Commit Form -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Commit & Push</h2>
+        </div>
+        <div class="p-6">
+            <div class="mb-4">
+                <label for="commit-message" class="block text-sm font-medium text-gray-700 mb-1">Commit Message</label>
+                <input type="text" id="commit-message" placeholder="Describe your changes..."
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-admin-primary focus:border-transparent">
+            </div>
+            <div class="flex space-x-3">
+                <button id="btn-commit" onclick="commitChanges()" disabled
+                    class="px-5 py-2 bg-admin-primary text-white rounded-lg hover:bg-admin-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Commit All
+                </button>
+                <button id="btn-push" onclick="pushChanges()" disabled
+                    class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    🚀 Push to GitHub
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Unpushed Commits -->
+    <div id="unpushed-section" class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Unpushed Commits</h2>
+        </div>
+        <div id="unpushed-list" class="divide-y divide-gray-100"></div>
+    </div>
+
+    <!-- Recent History -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-900">Recent Commits</h2>
+        </div>
+        <div id="commit-log" class="divide-y divide-gray-100 max-h-80 overflow-y-auto">
+            <div class="px-6 py-8 text-center text-gray-400">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<script>
+const STATUS_CODES = {
+    'M': { label: 'Modified', color: 'text-yellow-600 bg-yellow-50' },
+    'A': { label: 'Added', color: 'text-green-600 bg-green-50' },
+    'D': { label: 'Deleted', color: 'text-red-600 bg-red-50' },
+    'R': { label: 'Renamed', color: 'text-blue-600 bg-blue-50' },
+    '??': { label: 'Untracked', color: 'text-gray-600 bg-gray-50' },
+    'AM': { label: 'Added', color: 'text-green-600 bg-green-50' },
+    'MM': { label: 'Modified', color: 'text-yellow-600 bg-yellow-50' }
+};
+
+function showBanner(message, type) {
+    const banner = document.getElementById('status-banner');
+    banner.className = 'mb-6 p-4 rounded-lg border';
+    if (type === 'success') {
+        banner.className += ' bg-green-50 border-green-300 text-green-800';
+    } else if (type === 'error') {
+        banner.className += ' bg-red-50 border-red-300 text-red-800';
+    } else {
+        banner.className += ' bg-blue-50 border-blue-300 text-blue-800';
+    }
+    banner.textContent = message;
+    banner.classList.remove('hidden');
+    setTimeout(() => banner.classList.add('hidden'), 6000);
+}
+
+async function refreshStatus() {
+    try {
+        const [statusRes, logRes] = await Promise.all([
+            fetch('/api/github/status'),
+            fetch('/api/github/log')
+        ]);
+        const status = await statusRes.json();
+        const log = await logRes.json();
+
+        if (status.error) { showBanner(status.error, 'error'); return; }
+
+        // Branch & remote
+        document.getElementById('branch-name').textContent = status.branch || '—';
+        const remoteEl = document.getElementById('remote-url');
+        remoteEl.textContent = status.remote_url || 'No remote';
+        remoteEl.title = status.remote_url || '';
+
+        // Tree status
+        const treeEl = document.getElementById('tree-status');
+        if (status.clean) {
+            treeEl.textContent = '✓ Clean';
+            treeEl.className = 'text-lg font-semibold text-green-600';
+        } else {
+            treeEl.textContent = `${status.changed_files.length} changes`;
+            treeEl.className = 'text-lg font-semibold text-yellow-600';
+        }
+
+        // Changed files
+        const filesEl = document.getElementById('changed-files');
+        document.getElementById('file-count').textContent =
+            status.changed_files.length ? `${status.changed_files.length} file(s)` : '';
+
+        if (status.changed_files.length === 0) {
+            filesEl.innerHTML = '<div class="px-6 py-6 text-center text-gray-400">Working tree clean — nothing to commit</div>';
+        } else {
+            filesEl.innerHTML = status.changed_files.map(f => {
+                const info = STATUS_CODES[f.status] || { label: f.status, color: 'text-gray-600 bg-gray-50' };
+                return `<div class="px-6 py-2 flex items-center justify-between">
+                    <span class="font-mono text-sm text-gray-800">${escapeHtml(f.path)}</span>
+                    <span class="text-xs px-2 py-0.5 rounded ${info.color}">${info.label}</span>
+                </div>`;
+            }).join('');
+        }
+
+        // Buttons
+        document.getElementById('btn-commit').disabled = status.clean;
+        document.getElementById('btn-push').disabled =
+            (status.unpushed_commits.length === 0 && status.clean);
+
+        // Unpushed
+        const unpushedSection = document.getElementById('unpushed-section');
+        if (status.unpushed_commits.length > 0) {
+            unpushedSection.classList.remove('hidden');
+            document.getElementById('unpushed-list').innerHTML =
+                status.unpushed_commits.map(c =>
+                    `<div class="px-6 py-2 text-sm font-mono text-gray-700">${escapeHtml(c)}</div>`
+                ).join('');
+        } else {
+            unpushedSection.classList.add('hidden');
+        }
+
+        // Commit log
+        renderLog(log.commits || []);
+    } catch (err) {
+        showBanner('Failed to fetch status: ' + err.message, 'error');
+    }
+}
+
+function renderLog(commits) {
+    const el = document.getElementById('commit-log');
+    if (!commits.length) {
+        el.innerHTML = '<div class="px-6 py-6 text-center text-gray-400">No commits yet</div>';
+        return;
+    }
+    el.innerHTML = commits.map(c =>
+        `<div class="px-6 py-3 flex items-start justify-between">
+            <div class="flex-1 min-w-0">
+                <span class="font-mono text-xs text-admin-primary mr-2">${escapeHtml(c.short_hash)}</span>
+                <span class="text-sm text-gray-800">${escapeHtml(c.message)}</span>
+            </div>
+            <span class="text-xs text-gray-400 ml-4 whitespace-nowrap">${escapeHtml(c.date)}</span>
+        </div>`
+    ).join('');
+}
+
+async function commitChanges() {
+    const msg = document.getElementById('commit-message').value.trim();
+    if (!msg) { showBanner('Please enter a commit message', 'error'); return; }
+    document.getElementById('btn-commit').disabled = true;
+    try {
+        const res = await fetch('/api/github/commit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+        });
+        const data = await res.json();
+        if (data.error) { showBanner(data.error, 'error'); return; }
+        showBanner(`Committed ${data.files_committed} file(s) — ${data.commit}`, 'success');
+        document.getElementById('commit-message').value = '';
+        refreshStatus();
+    } catch (err) {
+        showBanner('Commit failed: ' + err.message, 'error');
+    }
+}
+
+async function pushChanges() {
+    document.getElementById('btn-push').disabled = true;
+    try {
+        const res = await fetch('/api/github/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.error) { showBanner(data.error, 'error'); return; }
+        showBanner(data.message, 'success');
+        refreshStatus();
+    } catch (err) {
+        showBanner('Push failed: ' + err.message, 'error');
+    }
+}
+
+function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Auto-load on page ready
+document.addEventListener('DOMContentLoaded', refreshStatus);
+</script>
+{% endblock %}

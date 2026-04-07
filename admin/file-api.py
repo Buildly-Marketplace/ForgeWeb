@@ -218,7 +218,11 @@ Thumbs.db
 
     def do_POST(self):
         """Handle POST requests for API endpoints"""
-        if self.path == '/api/save-file':
+        if self.path == '/api/github/commit':
+            self.handle_github_commit()
+        elif self.path == '/api/github/push':
+            self.handle_github_push()
+        elif self.path == '/api/save-file':
             self.handle_save_file()
         elif self.path == '/api/create-preview':
             self.handle_create_preview()
@@ -301,7 +305,8 @@ Thumbs.db
             'html-import.html': 'html-import.html',
             'media-library.html': 'media-library.html',
             'settings.html': 'settings.html',
-            'social.html': 'social.html'
+            'social.html': 'social.html',
+            'deploy.html': 'deploy.html'
         }
         
         if file_path in template_pages:
@@ -822,7 +827,13 @@ Thumbs.db
     def handle_api_get_request(self):
         """Handle GET API requests"""
         try:
-            if self.path == '/api/navigation':
+            if self.path == '/api/github/status':
+                self.handle_github_status()
+                return
+            elif self.path == '/api/github/log':
+                self.handle_github_log()
+                return
+            elif self.path == '/api/navigation':
                 # Get all navigation items
                 if not db:
                     self.send_json_error(500, 'Database not available')
@@ -2206,6 +2217,138 @@ body { font-family: 'Montserrat', system-ui, sans-serif; }"""
         if clean_path.startswith('/'):
             clean_path = clean_path[1:]
         return clean_path
+
+    # ── GitHub Pages Deploy ────────────────────────────────
+
+    def _get_repo_root(self):
+        """Get the git repository root directory"""
+        return os.path.dirname(os.path.dirname(self.admin_dir))
+
+    def _run_git(self, args, check=True):
+        """Run a git command in the repo root and return the result"""
+        repo_root = self._get_repo_root()
+        result = subprocess.run(
+            ['git'] + args,
+            cwd=repo_root,
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if check and result.returncode != 0:
+            raise RuntimeError(result.stderr.strip() or f"git {args[0]} failed")
+        return result
+
+    def handle_github_status(self):
+        """GET /api/github/status — changed files, current branch, remote info"""
+        try:
+            # Current branch
+            branch_result = self._run_git(['rev-parse', '--abbrev-ref', 'HEAD'])
+            branch = branch_result.stdout.strip()
+
+            # Porcelain status (machine-readable)
+            status_result = self._run_git(['status', '--porcelain'], check=False)
+            lines = [l for l in status_result.stdout.strip().split('\n') if l]
+            changed_files = []
+            for line in lines:
+                status_code = line[:2].strip()
+                filepath = line[3:]
+                changed_files.append({'status': status_code, 'path': filepath})
+
+            # Remote URL
+            remote_result = self._run_git(['remote', 'get-url', 'origin'], check=False)
+            remote_url = remote_result.stdout.strip() if remote_result.returncode == 0 else ''
+
+            # Unpushed commits
+            unpushed_result = self._run_git(
+                ['log', f'origin/{branch}..HEAD', '--oneline'],
+                check=False
+            )
+            unpushed = [l for l in unpushed_result.stdout.strip().split('\n') if l] if unpushed_result.returncode == 0 else []
+
+            self.send_json_response({
+                'branch': branch,
+                'remote_url': remote_url,
+                'changed_files': changed_files,
+                'unpushed_commits': unpushed,
+                'clean': len(changed_files) == 0
+            })
+        except Exception as e:
+            self.send_json_error(500, str(e))
+
+    def handle_github_commit(self):
+        """POST /api/github/commit — stage all and commit with a message"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            body = json.loads(self.rfile.read(content_length).decode('utf-8')) if content_length else {}
+            message = body.get('message', '').strip()
+            if not message:
+                self.send_json_error(400, 'Commit message is required')
+                return
+
+            # Stage all changes
+            self._run_git(['add', '-A'])
+
+            # Check there is something to commit
+            status = self._run_git(['status', '--porcelain'], check=False)
+            staged = [l for l in status.stdout.strip().split('\n') if l]
+            if not staged:
+                self.send_json_error(400, 'Nothing to commit — working tree clean')
+                return
+
+            # Commit
+            self._run_git(['commit', '-m', message])
+
+            # Get the new commit hash
+            hash_result = self._run_git(['rev-parse', '--short', 'HEAD'])
+            commit_hash = hash_result.stdout.strip()
+
+            self.send_json_response({
+                'success': True,
+                'commit': commit_hash,
+                'message': message,
+                'files_committed': len(staged)
+            })
+        except Exception as e:
+            self.send_json_error(500, str(e))
+
+    def handle_github_push(self):
+        """POST /api/github/push — push current branch to origin"""
+        try:
+            branch_result = self._run_git(['rev-parse', '--abbrev-ref', 'HEAD'])
+            branch = branch_result.stdout.strip()
+
+            self._run_git(['push', 'origin', branch])
+
+            self.send_json_response({
+                'success': True,
+                'branch': branch,
+                'message': f'Pushed to origin/{branch}'
+            })
+        except Exception as e:
+            self.send_json_error(500, str(e))
+
+    def handle_github_log(self):
+        """GET /api/github/log — recent commit history"""
+        try:
+            log_result = self._run_git([
+                'log', '--oneline', '--format=%H|%h|%s|%an|%ar', '-20'
+            ], check=False)
+            commits = []
+            for line in log_result.stdout.strip().split('\n'):
+                if '|' not in line:
+                    continue
+                parts = line.split('|', 4)
+                if len(parts) == 5:
+                    commits.append({
+                        'hash': parts[0],
+                        'short_hash': parts[1],
+                        'message': parts[2],
+                        'author': parts[3],
+                        'date': parts[4]
+                    })
+            self.send_json_response({'commits': commits})
+        except Exception as e:
+            self.send_json_error(500, str(e))
 
     def send_json_response(self, data):
         """Send JSON response"""
