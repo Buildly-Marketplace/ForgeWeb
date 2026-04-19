@@ -95,4 +95,4 @@ Contact Buildly at [licensing@buildly.io](mailto:licensing@buildly.io) or visit 
 
 **Questions?** Contact us at [legal@buildly.io](mailto:legal@buildly.io)
 
-**Copyright © 2025 Buildly Inc. All rights reserved.**
+**Copyright © 2026 Buildly Inc. All rights reserved.**
